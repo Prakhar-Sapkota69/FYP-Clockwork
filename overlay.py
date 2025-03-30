@@ -3,9 +3,9 @@ import psutil
 import time
 import threading
 import random  # Temporary for FPS, replace with actual FPS tracking
-from PySide6.QtCore import Qt, QTimer, Signal, QObject
+from PySide6.QtCore import Qt, QTimer, Signal, QObject, QPoint
 from PySide6.QtWidgets import QLabel, QWidget, QVBoxLayout
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QPainter, QColor
 
 class OverlayBackend(QObject):
     fps_updated = Signal(str)
@@ -40,46 +40,83 @@ class OverlayBackend(QObject):
     def get_fps(self):
         return random.randint(30, 144)  # Replace with real FPS tracking
 
+class OverlayManager:
+    def __init__(self):
+        self.fps_counter = 0
+        self.frame_times = []
+        
+    def get_fps(self):
+        """Simulate FPS calculation for now"""
+        return 60  # Placeholder return
+
 class OverlayWindow(QWidget):
     def __init__(self):
         super().__init__()
-
-        # Initially hidden
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(
+            Qt.FramelessWindowHint | 
+            Qt.WindowStaysOnTopHint | 
+            Qt.Tool
+        )
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.setWindowOpacity(0)  # Start hidden
-
-        layout = QVBoxLayout()
-        self.fps_label = QLabel("FPS: --", self)
-        self.cpu_label = QLabel("CPU: --", self)
-        self.ram_label = QLabel("RAM: --", self)
-
-        for label in [self.fps_label, self.cpu_label, self.ram_label]:
-            label.setFont(QFont("Arial", 16, QFont.Bold))
-            label.setStyleSheet("color: white; background-color: rgba(0, 0, 0, 150); padding: 5px;")
-            layout.addWidget(label)
-
-        self.setLayout(layout)
-        self.resize(200, 100)
-        self.move(50, 50)
-
+        
+        # Create layout
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 5, 10, 5)
+        
+        # Create FPS label
+        self.fps_label = QLabel("FPS: 0")
+        self.fps_label.setStyleSheet("""
+            QLabel {
+                color: #00FF00;
+                font-size: 16px;
+                font-weight: bold;
+                background-color: rgba(0, 0, 0, 150);
+                padding: 5px;
+                border-radius: 5px;
+            }
+        """)
+        layout.addWidget(self.fps_label)
+        
+        # Set initial position
+        self.move(QPoint(50, 50))
+        
         self.backend = OverlayBackend()
         self.backend.fps_updated.connect(self.fps_label.setText)
-        self.backend.cpu_updated.connect(self.cpu_label.setText)
-        self.backend.ram_updated.connect(self.ram_label.setText)
 
+    def update_fps(self, fps):
+        """Update the FPS display"""
+        self.fps_label.setText(f"FPS: {fps}")
+        
     def show_overlay(self):
-        """Show the overlay and start monitoring."""
-        self.setWindowOpacity(1)  # Make visible
-        self.backend.start_monitoring()
+        """Show the overlay window"""
         self.show()
-
+        
     def hide_overlay(self):
-        """Hide the overlay and stop monitoring."""
-        self.setWindowOpacity(0)  # Make invisible
-        self.backend.stop_monitoring()
+        """Hide the overlay window"""
         self.hide()
+        
+    def mousePressEvent(self, event):
+        """Handle mouse press events for dragging"""
+        if event.button() == Qt.LeftButton:
+            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+            
+    def mouseMoveEvent(self, event):
+        """Handle mouse move events for dragging"""
+        if event.buttons() & Qt.LeftButton:
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
+            
+    def paintEvent(self, event):
+        """Custom paint event for rounded corners"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Create rounded rectangle
+        rect = self.rect()
+        painter.setBrush(QColor(0, 0, 0, 150))
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(rect, 10, 10)
 
     def closeEvent(self, event):
         """Ensure the monitoring stops when closed."""
