@@ -8,10 +8,31 @@ class SystemOptimizer:
         """
         Get CPU, RAM, and Disk usage as percentages.
         """
-        cpu_usage = psutil.cpu_percent(interval=1)
-        ram_usage = psutil.virtual_memory().percent
-        disk_usage = psutil.disk_usage('/').percent
-        return cpu_usage, ram_usage, disk_usage
+        try:
+            # Warm-up call to get accurate CPU readings
+            psutil.cpu_percent(interval=None)
+            
+            # Get CPU usage with a 1-second interval to match Task Manager
+            cpu_usage = psutil.cpu_percent(interval=1.0, percpu=False)
+            
+            # Get RAM usage
+            ram = psutil.virtual_memory()
+            ram_usage = ram.percent
+            
+            # Get Disk activity instead of disk space usage
+            disk_io = psutil.disk_io_counters()
+            disk_activity = (disk_io.read_bytes + disk_io.write_bytes) / (1024 * 1024)  # Convert to MB
+            
+            # Print debug information
+            print(f"CPU Usage: {cpu_usage:.2f}%")
+            print(f"RAM Usage: {ram_usage:.2f}%")
+            print(f"Disk Activity: {disk_activity:.2f} MB/s")
+            
+            return cpu_usage, ram_usage, disk_activity
+        
+        except Exception as e:
+            print(f"Error getting system usage: {e}")
+            return 0, 0, 0
 
     @staticmethod
     def optimize_pc():
@@ -69,7 +90,7 @@ class SystemOptimizer:
             return
 
         process_list = "\n".join([f"{idx}. {name} (PID: {pid}) - CPU: {cpu:.2f}%, Memory: {mem:.2f}%" 
-                                 for idx, (pid, name, cpu, mem) in enumerate(processes, start=1)])
+                                    for idx, (pid, name, cpu, mem) in enumerate(processes, start=1)])
 
         # Prompt user to input process numbers
         input_dialog = QInputDialog()
