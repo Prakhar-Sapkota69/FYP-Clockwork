@@ -1,13 +1,3 @@
-# -*- coding: utf-8 -*-
-
-################################################################################
-## Form generated from reading UI file 'interface.ui'
-##
-## Created by: Qt User Interface Compiler version 6.8.1
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
@@ -18,7 +8,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QFrame, QGridLayout, QGroupBox,
     QHBoxLayout, QLCDNumber, QLabel, QLineEdit,
     QMainWindow, QProgressBar, QPushButton, QSizePolicy,
-    QSpacerItem, QStackedWidget, QVBoxLayout, QWidget, QComboBox)
+    QSpacerItem, QStackedWidget, QVBoxLayout, QWidget, QComboBox, QButtonGroup, QSlider)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -776,141 +766,7 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.saveFileTab)
 
         # Overlay Tab
-        self.overlayTab = QWidget()
-        self.overlayTab.setObjectName(u"overlayTab")
-        self.overlayLayout = QVBoxLayout(self.overlayTab)
-        self.overlayLayout.setSpacing(15)
-        self.overlayLayout.setContentsMargins(15, 15, 15, 15)
-
-        # Overlay Preview Container
-        self.overlayPreview = QWidget()
-        self.overlayPreview.setObjectName(u"overlayPreview")
-        self.overlayPreview.setMinimumSize(300, 200)
-        self.overlayPreview.setStyleSheet("""
-            QWidget#overlayPreview {
-                background-color: rgba(0, 0, 0, 0.7);
-                border-radius: 15px;
-                border: 1px solid #2C5A68;
-            }
-        """)
-        
-        # Metrics Grid Layout
-        self.metricsGrid = QGridLayout(self.overlayPreview)
-        self.metricsGrid.setSpacing(10)
-        self.metricsGrid.setContentsMargins(15, 15, 15, 15)
-        
-        # FPS Metric
-        self.fpsContainer = QWidget()
-        self.fpsContainer.setObjectName(u"fpsContainer")
-        self.fpsContainer.setStyleSheet("""
-            QWidget#fpsContainer {
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 12px;
-                border: 1px solid #FF6B6B;
-            }
-        """)
-        fpsLayout = QHBoxLayout(self.fpsContainer)
-        fpsLayout.setContentsMargins(12, 8, 12, 8)
-        self.fpsLabel = QLabel("FPS")
-        self.fpsLabel.setStyleSheet("color: #FF6B6B; font-size: 14px; font-weight: bold;")
-        self.fpsValue = QLabel("0")
-        self.fpsValue.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
-        fpsLayout.addWidget(self.fpsLabel)
-        fpsLayout.addWidget(self.fpsValue)
-        fpsLayout.addStretch()
-        
-        # CPU Metric
-        self.cpuContainer = QWidget()
-        self.cpuContainer.setObjectName(u"cpuContainer")
-        self.cpuContainer.setStyleSheet("""
-            QWidget#cpuContainer {
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 12px;
-                border: 1px solid #4ECDC4;
-            }
-        """)
-        cpuLayout = QHBoxLayout(self.cpuContainer)
-        cpuLayout.setContentsMargins(12, 8, 12, 8)
-        self.cpuLabel = QLabel("CPU")
-        self.cpuLabel.setStyleSheet("color: #4ECDC4; font-size: 14px; font-weight: bold;")
-        self.cpuValue = QLabel("0%")
-        self.cpuValue.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
-        cpuLayout.addWidget(self.cpuLabel)
-        cpuLayout.addWidget(self.cpuValue)
-        cpuLayout.addStretch()
-        
-        # RAM Metric
-        self.ramContainer = QWidget()
-        self.ramContainer.setObjectName(u"ramContainer")
-        self.ramContainer.setStyleSheet("""
-            QWidget#ramContainer {
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 12px;
-                border: 1px solid #45B7D1;
-            }
-        """)
-        ramLayout = QHBoxLayout(self.ramContainer)
-        ramLayout.setContentsMargins(12, 8, 12, 8)
-        self.ramLabel = QLabel("RAM")
-        self.ramLabel.setStyleSheet("color: #45B7D1; font-size: 14px; font-weight: bold;")
-        self.ramValue = QLabel("0%")
-        self.ramValue.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
-        ramLayout.addWidget(self.ramLabel)
-        ramLayout.addWidget(self.ramValue)
-        ramLayout.addStretch()
-        
-        # GPU Metric
-        self.gpuContainer = QWidget()
-        self.gpuContainer.setObjectName(u"gpuContainer")
-        self.gpuContainer.setStyleSheet("""
-            QWidget#gpuContainer {
-                background-color: rgba(0, 0, 0, 0.5);
-                border-radius: 12px;
-                border: 1px solid #96CEB4;
-            }
-        """)
-        gpuLayout = QHBoxLayout(self.gpuContainer)
-        gpuLayout.setContentsMargins(12, 8, 12, 8)
-        self.gpuLabel = QLabel("GPU")
-        self.gpuLabel.setStyleSheet("color: #96CEB4; font-size: 14px; font-weight: bold;")
-        self.gpuValue = QLabel("0%")
-        self.gpuValue.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
-        gpuLayout.addWidget(self.gpuLabel)
-        gpuLayout.addWidget(self.gpuValue)
-        gpuLayout.addStretch()
-        
-        # Add metrics to grid
-        self.metricsGrid.addWidget(self.fpsContainer, 0, 0)
-        self.metricsGrid.addWidget(self.cpuContainer, 0, 1)
-        self.metricsGrid.addWidget(self.ramContainer, 1, 0)
-        self.metricsGrid.addWidget(self.gpuContainer, 1, 1)
-        
-        self.overlayLayout.addWidget(self.overlayPreview)
-        
-        # Toggle Overlay Button
-        self.toggleOverlay = QPushButton(self.overlayTab)
-        self.toggleOverlay.setObjectName(u"toggleOverlay")
-        self.toggleOverlay.setText(u"Toggle Overlay")
-        self.toggleOverlay.setStyleSheet("""
-            QPushButton {
-                background-color: #2C5A68;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #3B82F6;
-            }
-            QPushButton:pressed {
-                background-color: #2563EB;
-            }
-        """)
-        self.overlayLayout.addWidget(self.toggleOverlay)
-        self.overlayLayout.addStretch()
-
-        self.stackedWidget.addWidget(self.overlayTab)
+        self.setup_overlay_tab()
 
         # Optimization Tab
         self.optimizationTab = QWidget()
@@ -944,7 +800,6 @@ class Ui_MainWindow(object):
 
         # Container for main content
         self.optimizationContainer = QWidget(self.optimizationTab)
-        self.optimizationContainer.setMaximumWidth(1000)
         self.optimizationContainer.setStyleSheet("""
             QWidget {
                 background-color: #204B57;
@@ -954,12 +809,13 @@ class Ui_MainWindow(object):
         """)
         
         self.optimizationContainerLayout = QVBoxLayout(self.optimizationContainer)
-        self.optimizationContainerLayout.setSpacing(25)
-        self.optimizationContainerLayout.setContentsMargins(30, 30, 30, 30)
+        self.optimizationContainerLayout.setSpacing(15)
+        self.optimizationContainerLayout.setContentsMargins(20, 20, 20, 20)
 
         # System Info Cards Layout
         cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(20)
+        cards_layout.setSpacing(10)
+        cards_layout.setContentsMargins(0, 0, 0, 0)
 
         # CPU Usage Card
         cpu_card = QFrame()
@@ -967,16 +823,19 @@ class Ui_MainWindow(object):
             QFrame {
                 background-color: #2C5A68;
                 border-radius: 12px;
-                padding: 20px;
-                border: 1px solid #3B82F6;
+                padding: 15px;
+                border: 2px solid #3B82F6;
+                min-width: 150px;
             }
             QFrame:hover {
                 background-color: #265461;
-                border: 1px solid #60A5FA;
+                border: 2px solid #60A5FA;
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
             }
         """)
         cpu_layout = QVBoxLayout(cpu_card)
-        cpu_layout.setSpacing(15)
+        cpu_layout.setSpacing(10)
+        cpu_layout.setContentsMargins(0, 0, 0, 0)
         
         cpu_header = QHBoxLayout()
         cpu_icon = QLabel()
@@ -994,6 +853,7 @@ class Ui_MainWindow(object):
         cpu_header.addStretch()
         cpu_layout.addLayout(cpu_header)
         
+        # Add CPU value label
         self.cpuLabel = QLabel("0%")
         self.cpuLabel.setStyleSheet("""
             color: #E2E8F0;
@@ -1010,16 +870,19 @@ class Ui_MainWindow(object):
             QFrame {
                 background-color: #2C5A68;
                 border-radius: 12px;
-                padding: 20px;
-                border: 1px solid #3B82F6;
+                padding: 15px;
+                border: 2px solid #3B82F6;
+                min-width: 150px;
             }
             QFrame:hover {
                 background-color: #265461;
-                border: 1px solid #60A5FA;
+                border: 2px solid #60A5FA;
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
             }
         """)
         ram_layout = QVBoxLayout(ram_card)
-        ram_layout.setSpacing(15)
+        ram_layout.setSpacing(10)
+        ram_layout.setContentsMargins(0, 0, 0, 0)
         
         ram_header = QHBoxLayout()
         ram_icon = QLabel()
@@ -1037,6 +900,7 @@ class Ui_MainWindow(object):
         ram_header.addStretch()
         ram_layout.addLayout(ram_header)
         
+        # Add RAM value label
         self.ramLabel = QLabel("0%")
         self.ramLabel.setStyleSheet("""
             color: #E2E8F0;
@@ -1053,16 +917,19 @@ class Ui_MainWindow(object):
             QFrame {
                 background-color: #2C5A68;
                 border-radius: 12px;
-                padding: 20px;
-                border: 1px solid #3B82F6;
+                padding: 15px;
+                border: 2px solid #3B82F6;
+                min-width: 150px;
             }
             QFrame:hover {
                 background-color: #265461;
-                border: 1px solid #60A5FA;
+                border: 2px solid #60A5FA;
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
             }
         """)
         disk_layout = QVBoxLayout(disk_card)
-        disk_layout.setSpacing(15)
+        disk_layout.setSpacing(10)
+        disk_layout.setContentsMargins(0, 0, 0, 0)
         
         disk_header = QHBoxLayout()
         disk_icon = QLabel()
@@ -1127,7 +994,7 @@ class Ui_MainWindow(object):
         # Feature bullets
         bullet_points = [
             "🗑️ Clear temporary files",
-            "⚡ Optimize system processes",
+            "⚡ Manage system processes",
             "💻 Improve system performance"
         ]
         
@@ -1147,15 +1014,17 @@ class Ui_MainWindow(object):
         features_layout.addStretch()
         optimize_layout.addWidget(features_widget)
         
-        # Optimize button
+        # Buttons container
         button_container = QWidget()
         button_layout = QHBoxLayout(button_container)
         button_layout.setContentsMargins(0, 10, 0, 0)
+        button_layout.setSpacing(15)  # Add spacing between buttons
         
-        self.optimizeNowBtn = QPushButton("Optimize Now")
-        self.optimizeNowBtn.setObjectName(u"optimizeNowBtn")
-        self.optimizeNowBtn.setIcon(QIcon(u"icons/optimizenow.png"))
-        self.optimizeNowBtn.setStyleSheet("""
+        # Clean Temp Files button
+        self.cleanTempBtn = QPushButton("Clean Temporary Files")
+        self.cleanTempBtn.setObjectName(u"cleanTempBtn")
+        self.cleanTempBtn.setIcon(QIcon(u"icons/clean.png"))
+        self.cleanTempBtn.setStyleSheet("""
             QPushButton {
                 background-color: #723D46;
                 color: white;
@@ -1164,7 +1033,7 @@ class Ui_MainWindow(object):
                 padding: 12px 24px;
                 font-weight: bold;
                 font-size: 14px;
-                min-width: 150px;
+                min-width: 200px;
             }
             QPushButton:hover {
                 background-color: #8B4B55;
@@ -1173,9 +1042,33 @@ class Ui_MainWindow(object):
                 background-color: #5A3037;
             }
         """)
-        button_layout.addWidget(self.optimizeNowBtn)
-        button_layout.addStretch()
+        button_layout.addWidget(self.cleanTempBtn)
+
+        # Manage Processes button
+        self.manageProcessesBtn = QPushButton("Manage System Processes")
+        self.manageProcessesBtn.setObjectName(u"manageProcessesBtn")
+        self.manageProcessesBtn.setIcon(QIcon(u"icons/process.png"))
+        self.manageProcessesBtn.setStyleSheet("""
+            QPushButton {
+                background-color: #723D46;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-weight: bold;
+                font-size: 14px;
+                min-width: 200px;
+            }
+            QPushButton:hover {
+                background-color: #8B4B55;
+            }
+            QPushButton:pressed {
+                background-color: #5A3037;
+            }
+        """)
+        button_layout.addWidget(self.manageProcessesBtn)
         
+        button_layout.addStretch()
         optimize_layout.addWidget(button_container)
         self.optimizationContainerLayout.addWidget(optimize_section)
 
@@ -1270,11 +1163,267 @@ class Ui_MainWindow(object):
         self.backupButton.setText(QCoreApplication.translate("MainWindow", u"Backup", None))
         self.browseBackupButton.setText(QCoreApplication.translate("MainWindow", u"Browse backup folder", None))
         self.statusLabel.setText(QCoreApplication.translate("MainWindow", u"Press Backup button after selecting folder.", None))
-        self.fpsLabel.setText(QCoreApplication.translate("MainWindow", u"FPS", None))
-        self.cpuLabel.setText(QCoreApplication.translate("MainWindow", u"CPU", None))
-        self.ramLabel.setText(QCoreApplication.translate("MainWindow", u"RAM", None))
-        self.gpuLabel.setText(QCoreApplication.translate("MainWindow", u"GPU", None))
-        self.toggleOverlay.setText(QCoreApplication.translate("MainWindow", u"Toggle Overlay", None))
+        self.toggleOverlayBtn.setText(QCoreApplication.translate("MainWindow", u"Toggle Overlay", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"System Information", None))
-        self.optimizeNowBtn.setText(QCoreApplication.translate("MainWindow", u"Optimize Now", None))
+        self.cleanTempBtn.setText(QCoreApplication.translate("MainWindow", u"Clean Temporary Files", None))
+        self.manageProcessesBtn.setText(QCoreApplication.translate("MainWindow", u"Manage System Processes", None))
     # retranslateUi
+
+    def setup_overlay_tab(self):
+        """Setup the overlay tab with enhanced UI"""
+        # Create main container with gradient background
+        self.overlayTab = QWidget()
+        self.overlayTab.setObjectName("overlayTab")
+        self.overlayTab.setStyleSheet("""
+            QWidget#overlayTab {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #1a1c2e, stop:1 #2d2b55);
+            }
+        """)
+        
+        # Main layout with proper spacing
+        overlayLayout = QVBoxLayout(self.overlayTab)
+        overlayLayout.setContentsMargins(20, 20, 20, 20)
+        overlayLayout.setSpacing(20)
+        
+        # Title section
+        titleContainer = QWidget()
+        titleContainer.setObjectName("titleContainer")
+        titleContainer.setStyleSheet("""
+            QWidget#titleContainer {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                padding: 15px;
+            }
+        """)
+        titleLayout = QVBoxLayout(titleContainer)
+        titleLayout.setContentsMargins(15, 15, 15, 15)
+        
+        titleLabel = QLabel("Overlay Customization")
+        titleLabel.setStyleSheet("""
+            QLabel {
+                color: #ffffff;
+                font-size: 24px;
+                font-weight: bold;
+                padding: 5px;
+            }
+        """)
+        titleLayout.addWidget(titleLabel)
+        overlayLayout.addWidget(titleContainer)
+        
+        # Position section
+        positionContainer = QWidget()
+        positionContainer.setObjectName("positionContainer")
+        positionContainer.setStyleSheet("""
+            QWidget#positionContainer {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                padding: 15px;
+            }
+        """)
+        positionLayout = QVBoxLayout(positionContainer)
+        positionLayout.setContentsMargins(15, 15, 15, 15)
+        
+        positionLabel = QLabel("Overlay Position")
+        positionLabel.setStyleSheet("""
+            QLabel {
+                color: #ffffff;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+        """)
+        positionLayout.addWidget(positionLabel)
+        
+        # Position buttons grid
+        positionGrid = QGridLayout()
+        positionGrid.setSpacing(10)
+        
+        # Create button group for position buttons
+        self.positionGroup = QButtonGroup()
+        
+        # Create position buttons with enhanced styling
+        self.topLeftBtn = QPushButton("↖")
+        self.topRightBtn = QPushButton("↗")
+        self.bottomLeftBtn = QPushButton("↙")
+        self.bottomRightBtn = QPushButton("↘")
+        
+        positionButtons = [self.topLeftBtn, self.topRightBtn, self.bottomLeftBtn, self.bottomRightBtn]
+        positions = [(0, 0), (0, 1), (1, 0), (1, 1)]
+        
+        for i, (button, (row, col)) in enumerate(zip(positionButtons, positions)):
+            button.setObjectName("positionBtn")
+            button.setCheckable(True)
+            button.setStyleSheet("""
+                QPushButton#positionBtn {
+                    background-color: rgba(255, 255, 255, 0.1);
+                    color: white;
+                    border: 2px solid #5865f2;
+                    border-radius: 8px;
+                    padding: 15px;
+                    font-size: 20px;
+                    min-width: 60px;
+                    min-height: 60px;
+                }
+                QPushButton#positionBtn:hover {
+                    background-color: rgba(88, 101, 242, 0.2);
+                }
+                QPushButton#positionBtn:checked {
+                    background-color: #5865f2;
+                }
+            """)
+            positionGrid.addWidget(button, row, col)
+            self.positionGroup.addButton(button)
+        
+        positionLayout.addLayout(positionGrid)
+        overlayLayout.addWidget(positionContainer)
+        
+        # Customization section
+        customizationContainer = QWidget()
+        customizationContainer.setObjectName("customizationContainer")
+        customizationContainer.setStyleSheet("""
+            QWidget#customizationContainer {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                padding: 15px;
+            }
+        """)
+        customizationLayout = QVBoxLayout(customizationContainer)
+        customizationLayout.setContentsMargins(15, 15, 15, 15)
+        
+        customizationLabel = QLabel("Text Customization")
+        customizationLabel.setStyleSheet("""
+            QLabel {
+                color: #ffffff;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+        """)
+        customizationLayout.addWidget(customizationLabel)
+        
+        # Color picker section
+        colorContainer = QWidget()
+        colorContainer.setObjectName("colorContainer")
+        colorContainer.setStyleSheet("""
+            QWidget#colorContainer {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 10px;
+            }
+        """)
+        colorLayout = QHBoxLayout(colorContainer)
+        colorLayout.setContentsMargins(10, 10, 10, 10)
+        
+        colorLabel = QLabel("Text Color")
+        colorLabel.setStyleSheet("""
+            QLabel {
+                color: #ffffff;
+                font-size: 14px;
+                margin-right: 10px;
+            }
+        """)
+        colorLayout.addWidget(colorLabel)
+        
+        self.colorPicker = QPushButton()
+        self.colorPicker.setObjectName("colorPicker")
+        self.colorPicker.setFixedSize(40, 40)
+        self.colorPicker.setStyleSheet("""
+            QPushButton#colorPicker {
+                background-color: #ffffff;
+                border: 2px solid #5865f2;
+                border-radius: 8px;
+            }
+            QPushButton#colorPicker:hover {
+                border: 2px solid #4752c4;
+            }
+        """)
+        colorLayout.addWidget(self.colorPicker)
+        colorLayout.addStretch()
+        customizationLayout.addWidget(colorContainer)
+        
+        # Size slider section
+        sizeContainer = QWidget()
+        sizeContainer.setObjectName("sizeContainer")
+        sizeContainer.setStyleSheet("""
+            QWidget#sizeContainer {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 10px;
+                margin-top: 10px;
+            }
+        """)
+        sizeLayout = QVBoxLayout(sizeContainer)
+        sizeLayout.setContentsMargins(10, 10, 10, 10)
+        
+        sizeLabel = QLabel("Text Size")
+        sizeLabel.setStyleSheet("""
+            QLabel {
+                color: #ffffff;
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+        """)
+        sizeLayout.addWidget(sizeLabel)
+        
+        self.sizeSlider = QSlider(Qt.Horizontal)
+        self.sizeSlider.setObjectName("sizeSlider")
+        self.sizeSlider.setRange(8, 72)
+        self.sizeSlider.setValue(12)
+        self.sizeSlider.setStyleSheet("""
+            QSlider#sizeSlider {
+                height: 20px;
+            }
+            QSlider::groove:horizontal {
+                border: 1px solid #5865f2;
+                height: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                margin: 2px 0;
+                border-radius: 4px;
+            }
+            QSlider::handle:horizontal {
+                background: #5865f2;
+                border: none;
+                width: 18px;
+                margin: -5px 0;
+                border-radius: 9px;
+            }
+            QSlider::handle:horizontal:hover {
+                background: #4752c4;
+            }
+            QSlider::sub-page:horizontal {
+                background: #5865f2;
+                border-radius: 4px;
+            }
+        """)
+        sizeLayout.addWidget(self.sizeSlider)
+        customizationLayout.addWidget(sizeContainer)
+        
+        overlayLayout.addWidget(customizationContainer)
+        
+        # Toggle Overlay Button
+        self.toggleOverlayBtn = QPushButton("Toggle Overlay")
+        self.toggleOverlayBtn.setObjectName("toggleOverlayBtn")
+        self.toggleOverlayBtn.setStyleSheet("""
+            QPushButton#toggleOverlayBtn {
+                background-color: #5865f2;
+                color: white;
+                border: none;
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: bold;
+                margin-top: 10px;
+            }
+            QPushButton#toggleOverlayBtn:hover {
+                background-color: #4752c4;
+            }
+            QPushButton#toggleOverlayBtn:pressed {
+                background-color: #3b45b5;
+            }
+        """)
+        overlayLayout.addWidget(self.toggleOverlayBtn)
+        overlayLayout.addStretch()
+        
+        # Add the overlay tab to the stacked widget
+        self.stackedWidget.addWidget(self.overlayTab)

@@ -65,15 +65,23 @@ class SystemOptimizer:
         Identify background processes consuming excessive CPU or memory.
         """
         unnecessary_processes = []
-        system_processes = {"explorer.exe", "csrss.exe", "winlogon.exe", "system", "taskmgr.exe"}  # Safe list
+        system_processes = {
+            "explorer.exe", "csrss.exe", "winlogon.exe", "system", "taskmgr.exe",
+            "system idle process", "idle"
+        }  # Safe list
 
         for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
             try:
                 name = proc.info['name'].lower()
+                pid = proc.info['pid']
                 cpu = proc.info['cpu_percent']
                 memory = proc.info['memory_percent']
-                if (cpu > cpu_threshold or memory > memory_threshold) and name not in system_processes:
-                    unnecessary_processes.append((proc.info['pid'], proc.info['name'], cpu, memory))
+                if (
+                    (cpu > cpu_threshold or memory > memory_threshold)
+                    and name not in system_processes
+                    and pid != 0
+                ):
+                    unnecessary_processes.append((pid, proc.info['name'], cpu, memory))
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
 

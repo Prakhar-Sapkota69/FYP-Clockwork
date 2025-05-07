@@ -1,6 +1,6 @@
 import sys
 import subprocess
-from PyQt5.QtWidgets import QApplication, QPushButton, QFileDialog, QVBoxLayout, QWidget, QMessageBox
+from PySide6.QtWidgets import QApplication, QPushButton, QFileDialog, QVBoxLayout, QWidget, QMessageBox
 
 class ManualAddGame(QWidget):
     def __init__(self):

@@ -557,39 +557,37 @@ class ManualAddGameDialog(QDialog):
             self.poster_preview.setText("Error loading image")
 
     def get_game_data(self):
-        """Return a Game object with the entered data."""
-        # If editing an existing game, preserve its ID
-        game_id = self.game.id if self.game else None
-        
-        # Get all form data
-        name = self.name_input.text()
-        install_path = self.exe_input.text()
-        genre = self.genre_input.text() or None
-        release_date = self.date_input.text() or None
-        description = self.desc_input.text() or None
-        developers = [d.strip() for d in self.dev_input.text().split(',') if d.strip()] or None
-        publishers = [p.strip() for p in self.pub_input.text().split(',') if p.strip()] or None
-        
-        # Create game object with all data
-        return Game(
-            id=game_id,
-            name=name,
-            type='steam' if hasattr(self, 'steam_app_id') else 'manual',
-            app_id=getattr(self, 'steam_app_id', None),
-            install_path=install_path,
-            launch_command=install_path,
-            genre=genre,
-            is_installed=True,
-            playtime=self.game.playtime if self.game else 0,
-            metadata_fetched=True,
-            release_date=release_date,
-            description=description,
-            developers=developers,
-            publishers=publishers,
-            poster_url=self.poster_url,
-            poster_path=self.poster_path,
-            background_url=getattr(self, 'background_url', None)
-        )
+        """Get the game data from the dialog."""
+        try:
+            print(f"[DEBUG] Getting game data from dialog. Existing game: {self.game.name if self.game else 'None'}")
+            print(f"[DEBUG] Steam app ID: {getattr(self, 'steam_app_id', None)}")
+            
+            # Create a new game object with the current data
+            game_data = Game(
+                id=self.game.id if self.game else None,
+                name=self.name_input.text().strip(),
+                type='manual',  # Always set type to 'manual' for manually added games
+                app_id=getattr(self, 'steam_app_id', None),
+                install_path=self.exe_input.text().strip(),
+                launch_command=self.exe_input.text().strip(),
+                genre=self.genre_input.text() or None,
+                is_installed=True,
+                playtime=self.game.playtime if self.game else 0,
+                metadata_fetched=True,
+                release_date=self.date_input.text() or None,
+                description=self.desc_input.text() or None,
+                developers=[d.strip() for d in self.dev_input.text().split(',') if d.strip()] or None,
+                publishers=[p.strip() for p in self.pub_input.text().split(',') if p.strip()] or None,
+                poster_url=self.poster_url,
+                poster_path=self.poster_path,
+                background_url=getattr(self, 'background_url', None)
+            )
+            
+            print(f"[DEBUG] Created game data with type: {game_data.type}")
+            return game_data
+        except Exception as e:
+            print(f"[ERROR] Error getting game data: {str(e)}")
+            raise
 
     def on_metadata_fetched(self, metadata):
         """Handle successful metadata fetch"""
