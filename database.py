@@ -44,8 +44,6 @@ class DatabaseManager:
                     poster_url TEXT,
                     poster_path TEXT,
                     app_id TEXT,
-                    epic_app_id TEXT,
-                    epic_launch_command TEXT,
                     description TEXT,
                     release_date TEXT,
                     rating REAL,
@@ -175,18 +173,17 @@ class DatabaseManager:
             # Insert the new game
             self.cursor.execute("""
                 INSERT INTO games (
-                    name, type, app_id, epic_app_id, epic_launch_command,
+                    name, type, app_id,
                     install_path, launch_command, genre, is_installed,
                     playtime, metadata_fetched, poster_url, poster_path, background_url,
                     release_date, description, rating, platforms,
                     developers, publishers, metacritic, esrb_rating
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                game.name, game.type, game.app_id, game.epic_app_id,
-                game.epic_launch_command, game.install_path, game.launch_command,
-                game.genre, game.is_installed, game.playtime, game.metadata_fetched,
-                game.poster_url, game.poster_path, game.background_url, game.release_date,
-                game.description, game.rating,
+                game.name, game.type, game.app_id,
+                game.install_path, game.launch_command, game.genre, game.is_installed,
+                game.playtime, game.metadata_fetched, game.poster_url, game.poster_path, game.background_url,
+                game.release_date, game.description, game.rating,
                 ','.join(str(p) for p in (game.platforms or [])),
                 ','.join(str(d) for d in (game.developers or [])),
                 ','.join(str(p) for p in (game.publishers or [])),
@@ -235,7 +232,7 @@ class DatabaseManager:
                        genre, is_installed, playtime, metadata_fetched,
                        poster_url, poster_path, background_url, release_date, description,
                        rating, platforms, developers, publishers,
-                       metacritic, esrb_rating, epic_app_id, epic_launch_command
+                       metacritic, esrb_rating
                 FROM games
             """)
             rows = self.cursor.fetchall()
@@ -263,9 +260,7 @@ class DatabaseManager:
                     developers=row[17].split(',') if row[17] else [],
                     publishers=row[18].split(',') if row[18] else [],
                     metacritic=row[19],
-                    esrb_rating=row[20],
-                    epic_app_id=row[21],
-                    epic_launch_command=row[22]
+                    esrb_rating=row[20]
                 )
                 games.append(game)
             

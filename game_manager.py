@@ -4,12 +4,10 @@ import psutil
 from typing import Optional
 from models import Game
 from database import DatabaseManager
-from epic_games import EpicGamesManager
 
 class GameManager:
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
-        self.epic_manager = EpicGamesManager()
         
     def launch_game(self, game_id: int) -> Optional[psutil.Process]:
         """Launch a game and return its process."""
@@ -30,12 +28,6 @@ class GameManager:
                 # Use os.startfile for Steam URLs
                 os.startfile(game.launch_command)
                 return None
-            elif game.type == 'epic':
-                # Launch Epic game
-                if self.epic_manager.launch_game(game):
-                    return None
-                else:
-                    raise Exception("Failed to launch Epic game")
             else:
                 # For regular executables
                 if game.install_path and os.path.exists(game.install_path):

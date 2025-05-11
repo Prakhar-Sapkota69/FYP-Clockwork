@@ -257,7 +257,7 @@ class FilterDialog(QDialog):
         # Add platform checkboxes
         self.platform_checkboxes = {}
         # Add common platforms first
-        common_platforms = ['steam', 'epic']
+        common_platforms = ['steam']
         for platform in common_platforms:
             if platform in self.available_platforms:
                 checkbox = CustomCheckBox(platform.capitalize())

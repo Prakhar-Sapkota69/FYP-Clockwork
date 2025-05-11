@@ -396,8 +396,6 @@ class MetadataFetcher(QObject):
         """Fetch metadata for a game based on its type."""
         if game.type == 'steam':
             return self._fetch_steam_metadata(game)
-        elif game.type == 'epic':
-            return self._fetch_epic_metadata(game)
         else:
             return None
 
@@ -418,17 +416,4 @@ class MetadataFetcher(QObject):
             return None
         except Exception as e:
             print(f"Error fetching Steam metadata: {e}")
-            return None
-
-    def _fetch_epic_metadata(self, game):
-        """Fetch metadata for an Epic game."""
-        try:
-            if not game.epic_app_id:
-                return None
-                
-            # Epic Games Store doesn't have a public API
-            # This is a placeholder for future implementation
-            return None
-        except Exception as e:
-            print(f"Error fetching Epic metadata: {e}")
             return None 

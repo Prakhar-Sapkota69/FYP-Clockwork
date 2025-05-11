@@ -10,10 +10,11 @@ from PySide6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QPushButton, QStackedWidget, 
     QWidget, QLabel, QGridLayout, QVBoxLayout, 
     QSizePolicy, QScrollArea, QSpacerItem, QFileDialog, QHBoxLayout,
-    QFrame, QProgressDialog, QDialog, QTextEdit, QStatusBar, QGraphicsDropShadowEffect
+    QFrame, QProgressDialog, QDialog, QTextEdit, QStatusBar, QGraphicsDropShadowEffect,
+    QColorDialog, QInputDialog
 )
 from PySide6.QtCore import QTimer, QUrl, Qt
-from PySide6.QtGui import QAction, QIcon, QDesktopServices, QImage, QPixmap, QColor
+from PySide6.QtGui import QAction, QIcon, QDesktopServices, QImage, QPixmap, QColor, QMovie
 from datetime import datetime
 
 from game_search import search_local_games, STEAM_API_KEY, get_steam_id, get_steam_games
@@ -36,6 +37,30 @@ from manual_add_dialog import ManualAddGameDialog
 
 # Get Steam ID at startup
 STEAM_ID = get_steam_id()
+
+class SpinnerDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.Dialog | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.setModal(True)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        layout = QVBoxLayout(self)
+        layout.setAlignment(Qt.AlignCenter)
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.movie = QMovie("./icons/loading.gif")
+        self.label.setMovie(self.movie)
+        self.label.setFixedSize(48, 48)
+        layout.addWidget(self.label)
+        self.setFixedSize(100, 100)
+
+    def start(self):
+        self.movie.start()
+        self.show()
+
+    def stop(self):
+        self.movie.stop()
+        self.hide()
 
 class MainWindow(QMainWindow):
     # Common styles for progress dialogs
@@ -80,6 +105,10 @@ class MainWindow(QMainWindow):
         self.splash.show()
         self.process_events()
         
+        # Initialize overlay window first
+        self.overlay_window = OverlayWindow(self)
+        self.overlay_window.hide()  # Start hidden
+        
         # Initialize UI with loading indicators
         self.init_ui_with_loading()
 
@@ -96,35 +125,36 @@ class MainWindow(QMainWindow):
         self.splash.set_progress(current_step, "Setting up window properties...")
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #1e1e1e;
+                background-color: #202C59;
             }
             QLabel {
-                color: white;
+                color: #B4CDED;
             }
             QPushButton {
-                background-color: #5865f2;
-                color: white;
+                background-color: #B4CDED;
+                color: #202C59;
                 border: none;
                 padding: 8px 16px;
                 border-radius: 6px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #4752c4;
+                background-color: #9BB8E0;
             }
             QPushButton:pressed {
-                background-color: #3b45b5;
+                background-color: #8AA8D0;
             }
             QLineEdit {
-                background-color: #40444b;
-                color: white;
-                border: none;
+                background-color: #2A3A6A;
+                color: #B4CDED;
+                border: 2px solid #B4CDED;
                 border-radius: 6px;
                 padding: 8px 12px;
-                selection-background-color: #5865f2;
+                selection-background-color: #B4CDED;
+                selection-color: #202C59;
             }
             QLineEdit:focus {
-                border: 1px solid #5865f2;
+                border: 2px solid #9BB8E0;
             }
         """)
         current_step += 1
@@ -145,7 +175,6 @@ class MainWindow(QMainWindow):
         
         self.splash.set_progress(current_step * 10, "Setting up game management...")
         self.game_manager = GameManager(self.db_manager)
-        self.overlay_window = OverlayWindow()
         self.save_file_manager = SaveFileManager(self.ui, self)
         current_step += 1
         
@@ -183,7 +212,7 @@ class MainWindow(QMainWindow):
             button.setStyleSheet("""
                 QPushButton {
                     background-color: transparent;
-                    color: #dcddde;
+                    color: #B4CDED;
                     border: none;
                     border-radius: 8px;
                     padding: 12px;
@@ -192,12 +221,12 @@ class MainWindow(QMainWindow):
                     font-weight: bold;
                 }
                 QPushButton:hover {
-                    background-color: #36393f;
-                    color: white;
+                    background-color: #2A3A6A;
+                    color: #FFFFFF;
                 }
                 QPushButton:checked {
-                    background-color: #5865f2;
-                    color: white;
+                    background-color: #B4CDED;
+                    color: #202C59;
                 }
             """)
         
@@ -212,103 +241,92 @@ class MainWindow(QMainWindow):
         for button in toolbar_buttons:
             button.setStyleSheet("""
                 QPushButton {
-                    color: #FFFFFF;
+                    color: #202C59;
                     font-size: 14px;
                     font-weight: 700;
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                              stop:0 #033860, stop:1 #044a7a);
+                    background: #B4CDED;
                     border-radius: 8px;
                     padding: 8px 16px;
-                    border: 2px solid #055a9a;
+                    border: 2px solid #9BB8E0;
                     min-height: 36px;
                 }
                 QPushButton:hover {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                              stop:0 #044a7a, stop:1 #055a9a);
-                    border: 2px solid #066aba;
+                    background: #9BB8E0;
+                    border: 2px solid #8AA8D0;
                 }
                 QPushButton:pressed {
-                    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                              stop:0 #055a9a, stop:1 #066aba);
-                    border: 2px solid #077cba;
+                    background: #8AA8D0;
+                    border: 2px solid #7A98C0;
                 }
             """)
             
         # Style manual add button separately with more rounded corners
         self.ui.manualAddBtn.setStyleSheet("""
             QPushButton {
-                color: #FFFFFF;
+                color: #202C59;
                 font-size: 14px;
                 font-weight: 700;
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #033860, stop:1 #044a7a);
+                background: #B4CDED;
                 border-radius: 12px;
                 padding: 8px 16px;
-                border: 2px solid #055a9a;
+                border: 2px solid #9BB8E0;
                 min-height: 36px;
                 min-width: 36px;
             }
             QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #044a7a, stop:1 #055a9a);
-                border: 2px solid #066aba;
+                background: #9BB8E0;
+                border: 2px solid #8AA8D0;
             }
             QPushButton:pressed {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #055a9a, stop:1 #066aba);
-                border: 2px solid #077cba;
+                background: #8AA8D0;
+                border: 2px solid #7A98C0;
             }
         """)
         
         # Make the sidebar background darker
         self.ui.leftMenu.setStyleSheet("""
             QWidget#leftMenu {
-                background-color: #2f3136;
-                border-right: 1px solid #202225;
+                background-color: #1A2547;
+                border-right: 1px solid #2A3A6A;
             }
         """)
         
         # Style the search box and its clear button
         self.ui.lineEdit.setStyleSheet("""
             QLineEdit {
-                color: #FFFFFF;
+                color: #B4CDED;
                 font-size: 14px;
                 font-weight: 700;
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #033860, stop:1 #044a7a);
+                background: #2A3A6A;
                 border-radius: 8px;
                 padding: 8px 16px;
-                border: 2px solid #055a9a;
+                border: 2px solid #B4CDED;
                 min-height: 36px;
             }
             QLineEdit:focus {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #044a7a, stop:1 #055a9a);
-                border: 2px solid #066aba;
+                background: #2A3A6A;
+                border: 2px solid #9BB8E0;
             }
         """)
         
         self.ui.clearSearchBtn.setStyleSheet("""
             QPushButton {
-                color: #FFFFFF;
+                color: #202C59;
                 font-size: 14px;
                 font-weight: 700;
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #033860, stop:1 #044a7a);
+                background: #B4CDED;
                 border-radius: 8px;
                 padding: 8px 16px;
-                border: 2px solid #055a9a;
+                border: 2px solid #9BB8E0;
                 min-height: 36px;
             }
             QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #044a7a, stop:1 #055a9a);
-                border: 2px solid #066aba;
+                background: #9BB8E0;
+                border: 2px solid #8AA8D0;
             }
             QPushButton:pressed {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #055a9a, stop:1 #066aba);
-                border: 2px solid #077cba;
+                background: #8AA8D0;
+                border: 2px solid #7A98C0;
             }
         """)
         
@@ -336,20 +354,18 @@ class MainWindow(QMainWindow):
         # Style game count label
         self.ui.gameCountLabel.setStyleSheet("""
             QLabel {
-                color: #FFFFFF;
+                color: #B4CDED;
                 font-size: 14px;
                 font-weight: 700;
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #033860, stop:1 #044a7a);
+                background: #2A3A6A;
                 border-radius: 12px;
                 padding: 8px 16px;
-                border: 2px solid #055a9a;
+                border: 2px solid #B4CDED;
                 min-height: 36px;
             }
             QLabel:hover {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                          stop:0 #044a7a, stop:1 #055a9a);
-                border: 2px solid #066aba;
+                background: #2A3A6A;
+                border: 2px solid #9BB8E0;
             }
         """)
         
@@ -377,21 +393,21 @@ class MainWindow(QMainWindow):
         self.scroll_area.setStyleSheet("""
             QScrollArea { 
                 border: none; 
-                background-color: #1e1e1e; 
+                background-color: #202C59; 
             }
             QScrollBar:vertical {
                 border: none;
-                background: #2d2d2d;
+                background: #2A3A6A;
                 width: 10px;
                 margin: 0px;
             }
             QScrollBar::handle:vertical {
-                background: #4f545c;
+                background: #B4CDED;
                 min-height: 20px;
                 border-radius: 5px;
             }
             QScrollBar::handle:vertical:hover {
-                background: #5865f2;
+                background: #9BB8E0;
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
@@ -400,24 +416,36 @@ class MainWindow(QMainWindow):
                 background: none;
             }
         """)
-        self.ui.homeLayout.addWidget(self.scroll_area)
         
+        # Create container widget with expanding size policy
         self.grid_widget = QWidget()
+        self.grid_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.grid_widget.setStyleSheet("background-color: #1e1e1e;")
         self.scroll_area.setWidget(self.grid_widget)
         
-        self.grid_layout = QGridLayout(self.grid_widget)
+        # Create main layout for the grid widget
+        self.main_layout = QVBoxLayout(self.grid_widget)
+        self.main_layout.setContentsMargins(30, 30, 30, 30)
+        self.main_layout.setSpacing(20)
+        
+        # Create grid layout with proper spacing
+        self.grid_layout = QGridLayout()
         self.grid_layout.setSpacing(20)
-        self.grid_layout.setContentsMargins(30, 30, 30, 30)
-        self.grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.main_layout.addLayout(self.grid_layout)
+        
+        # Add stretch to push content to the top
+        self.main_layout.addStretch()
+        
+        # Add to main layout
+        self.ui.homeLayout.addWidget(self.scroll_area)
 
     def setup_status_bar(self):
         """Setup the status bar."""
         self.status_bar = QStatusBar()
         self.status_bar.setStyleSheet("""
             QStatusBar { 
-                color: #b9bbbe; 
-                background-color: #2f3136;
+                color: #B4CDED; 
+                background-color: #1A2547;
                 padding: 5px;
                 font-size: 13px;
             }
@@ -431,17 +459,18 @@ class MainWindow(QMainWindow):
         self.metadata_fetcher.error.connect(self.on_metadata_fetch_error)
 
     def initialize_game_lists(self):
-        """Initialize game lists."""
+        """Initialize game lists and persistent card widgets."""
         self.games = []
         self.session_games = []
         self.filtered_games = []
+        self.card_widgets = {}  # {game.id: GameCard}
 
     def finish_loading(self):
         """Complete the loading process and show the main window."""
         self.splash.finish(self)
         self.show()
-        
-        # Start loading games after the window is shown
+        self.spinner_dialog = SpinnerDialog(self)
+        self.spinner_dialog.start()
         asyncio.create_task(self.load_initial_games())
 
     def load_games(self):
@@ -468,833 +497,14 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to load games: {str(e)}")
 
     def create_game_card(self, game):
-        try:
-            # Create the card widget with fixed dimensions for consistent layout
-            card = QWidget()
-            card.setObjectName("game-card")
-            card.setFixedWidth(300)
-            card.setMinimumHeight(360)  # Increase height for better spacing
-            card.setStyleSheet("""
-                QWidget#game-card { 
-                    background-color: #033860; 
-                    border-radius: 15px; 
-                    padding: 0px; 
-                    margin: 8px;
-                    border: 3px solid #044a7a;
-                }
-                QWidget#game-card:hover { 
-                    background-color: #044a7a;
-                    border: 3px solid #055a9a;
-                }
-                QLabel { 
-                    color: white; 
-                }
-                QPushButton { 
-                    background-color: #7C8483; 
-                    color: white; 
-                    border: none; 
-                    padding: 8px 15px; 
-                    border-radius: 8px;
-                    font-weight: bold;
-                    font-size: 13px;
-                }
-                QPushButton:hover { 
-                    background-color: #8a9291; 
-                }
-                QPushButton:pressed {
-                    background-color: #6e7675;
-                }
-            """)
-            
-            # Create main layout
-            layout = QVBoxLayout()
-            layout.setSpacing(10)
-            layout.setContentsMargins(0, 0, 0, 15)
-            
-            # Create image container with rounded top corners
-            image_container = QWidget()
-            image_container.setFixedSize(300, 170)
-            image_container.setStyleSheet("""
-                background-color: #022d4a; 
-                border-top-left-radius: 12px; 
-                border-top-right-radius: 12px;
-            """)
-            image_layout = QVBoxLayout(image_container)
-            image_layout.setContentsMargins(0, 0, 0, 0)
-            
-            # Add game poster/image
-            if game.poster_url:
-                try:
-                    img = self.load_image(game.poster_url)
-                    if img:
-                        poster_label = QLabel()
-                        poster_label.setFixedSize(300, 170)
-                        poster_label.setScaledContents(True)
-                        poster_label.setPixmap(QPixmap.fromImage(img))
-                        poster_label.setStyleSheet("""
-                            border-top-left-radius: 12px; 
-                            border-top-right-radius: 12px;
-                        """)
-                        poster_label.setAlignment(Qt.AlignCenter)
-                        image_layout.addWidget(poster_label)
-                    else:
-                        placeholder = QLabel(f"[No Image Available]")
-                        placeholder.setFixedSize(300, 170)
-                        placeholder.setStyleSheet("""
-                            background-color: #022d4a; 
-                            color: #7C8483; 
-                            font-style: italic;
-                            border-top-left-radius: 12px; 
-                            border-top-right-radius: 12px;
-                        """)
-                        placeholder.setAlignment(Qt.AlignCenter)
-                        image_layout.addWidget(placeholder)
-                except Exception as e:
-                    print(f"Error loading poster for {game.name}: {str(e)}")
-                    placeholder = QLabel(f"[Image Error]")
-                    placeholder.setFixedSize(300, 170)
-                    placeholder.setStyleSheet("""
-                        background-color: #022d4a; 
-                        color: #7C8483; 
-                        font-style: italic;
-                        border-top-left-radius: 12px; 
-                        border-top-right-radius: 12px;
-                    """)
-                    placeholder.setAlignment(Qt.AlignCenter)
-                    image_layout.addWidget(placeholder)
-            else:
-                placeholder = QLabel(f"[No Image]")
-                placeholder.setFixedSize(300, 170)
-                placeholder.setStyleSheet("""
-                    background-color: #022d4a; 
-                    color: #7C8483; 
-                    font-style: italic;
-                    border-top-left-radius: 12px; 
-                    border-top-right-radius: 12px;
-                """)
-                placeholder.setAlignment(Qt.AlignCenter)
-                image_layout.addWidget(placeholder)
-                
-            layout.addWidget(image_container)
-            
-            # Create info container for text
-            info_container = QWidget()
-            info_container.setStyleSheet("""
-                QWidget {
-                    background: transparent;
-                    border-left: 2px solid #044a7a;
-                    margin-left: 15px;
-                }
-            """)
-            info_layout = QVBoxLayout(info_container)
-            info_layout.setContentsMargins(15, 0, 15, 0)
-            info_layout.setSpacing(12)
-            
-            # Add game name with enhanced styling
-            title_container = QWidget()
-            title_container.setStyleSheet("""
-                QWidget {
-                    background: transparent;
-                    border: none;
-                }
-            """)
-            title_layout = QVBoxLayout(title_container)
-            title_layout.setContentsMargins(0, 0, 0, 8)
-            title_layout.setSpacing(0)
-            
-            title_label = QLabel(game.name)
-            title_label.setStyleSheet("""
-                font-weight: bold; 
-                font-size: 18px; 
-                color: #ffffff;
-                padding-bottom: 4px;
-            """)
-            title_label.setWordWrap(True)
-            title_label.setAlignment(Qt.AlignLeft)
-            title_label.setFixedHeight(50)
-            title_layout.addWidget(title_label)
-            
-            # Add separator line
-            separator = QFrame()
-            separator.setFrameShape(QFrame.HLine)
-            separator.setStyleSheet("""
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #044a7a, stop:1 transparent);
-                border: none;
-                height: 2px;
-                margin: 0;
-            """)
-            title_layout.addWidget(separator)
-            
-            info_layout.addWidget(title_container)
-            
-            # Add info layout for platform and status
-            details_layout = QVBoxLayout()
-            details_layout.setSpacing(12)
-            
-            # Add game type/platform with icon
-            if game.type:
-                platform_layout = QHBoxLayout()
-                platform_layout.setSpacing(10)
-                
-                platform_container = QWidget()
-                platform_container.setStyleSheet("""
-                    QWidget {
-                        background: rgba(2, 45, 74, 0.5);
-                        border-radius: 8px;
-                        padding: 4px;
-                    }
-                """)
-                platform_inner_layout = QHBoxLayout(platform_container)
-                platform_inner_layout.setContentsMargins(8, 4, 12, 4)
-                platform_inner_layout.setSpacing(8)
-                
-                platform_icon = QLabel("🖥️")
-                platform_icon.setStyleSheet("color: #00b0f4; font-size: 14px;")
-                platform_inner_layout.addWidget(platform_icon)
-                
-                type_label = QLabel(f"{game.type.capitalize()}")
-                type_label.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
-                platform_inner_layout.addWidget(type_label)
-                
-                platform_layout.addWidget(platform_container)
-                platform_layout.addStretch()
-                details_layout.addLayout(platform_layout)
-            
-            # Add installation status with icon
-            status_layout = QHBoxLayout()
-            status_layout.setSpacing(10)
-            
-            status_container = QWidget()
-            status_container.setStyleSheet("""
-                QWidget {
-                    background: rgba(2, 45, 74, 0.5);
-                    border-radius: 8px;
-                    padding: 4px;
-                }
-            """)
-            status_inner_layout = QHBoxLayout(status_container)
-            status_inner_layout.setContentsMargins(8, 4, 12, 4)
-            status_inner_layout.setSpacing(8)
-            
-            status_icon = QLabel("💾" if game.is_installed else "❌")
-            status_icon.setStyleSheet("color: #00b0f4; font-size: 14px;")
-            status_inner_layout.addWidget(status_icon)
-            
-            status_text = "Installed" if game.is_installed else "Not Installed"
-            status_label = QLabel(status_text)
-            status_label.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
-            status_inner_layout.addWidget(status_label)
-            
-            status_layout.addWidget(status_container)
-            status_layout.addStretch()
-            details_layout.addLayout(status_layout)
-            
-            # Add genre if available
-            if game.genre:
-                genre_layout = QHBoxLayout()
-                genre_layout.setSpacing(10)
-                
-                genre_container = QWidget()
-                genre_container.setStyleSheet("""
-                    QWidget {
-                        background: rgba(2, 45, 74, 0.5);
-                        border-radius: 8px;
-                        padding: 4px;
-                    }
-                """)
-                genre_inner_layout = QHBoxLayout(genre_container)
-                genre_inner_layout.setContentsMargins(8, 4, 12, 4)
-                genre_inner_layout.setSpacing(8)
-                
-                genre_icon = QLabel("🏷️")
-                genre_icon.setStyleSheet("color: #00b0f4; font-size: 14px;")
-                genre_inner_layout.addWidget(genre_icon)
-                
-                genre_label = QLabel(game.genre)
-                genre_label.setStyleSheet("color: #ffffff; font-size: 14px; font-weight: bold;")
-                genre_label.setWordWrap(True)
-                genre_inner_layout.addWidget(genre_label)
-                
-                genre_layout.addWidget(genre_container)
-                genre_layout.addStretch()
-                details_layout.addLayout(genre_layout)
-            
-            info_layout.addLayout(details_layout)
-            layout.addWidget(info_container)
-            
-            # Add spacer to push buttons to bottom
-            layout.addItem(QSpacerItem(0, 0, QSizePolicy.Minimum, QSizePolicy.Expanding))
-            
-            # Add buttons with updated styling
-            button_layout = QHBoxLayout()
-            button_layout.setContentsMargins(15, 0, 15, 0)
-            button_layout.setSpacing(8)  # Reduced spacing between buttons
-            
-            # For manually added games, create two rows of buttons
-            if game.type == 'manual':
-                # Create a vertical layout for the buttons
-                button_container = QVBoxLayout()
-                button_container.setSpacing(8)  # Space between rows
-                
-                # Top row layout (Play and Details)
-                top_row = QHBoxLayout()
-                top_row.setSpacing(8)
-                
-                launch_button = QPushButton("PLAY")
-                launch_button.setFixedHeight(36)
-                launch_button.setMinimumWidth(100)  # Ensure minimum width for text
-                launch_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #723D46;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #8B4B55;
-                    }
-                    QPushButton:pressed {
-                        background-color: #5E323A;
-                    }
-                """)
-                launch_button.clicked.connect(lambda: self.launch_game(game))
-                top_row.addWidget(launch_button)
-                
-                details_button = QPushButton("DETAILS")
-                details_button.setFixedHeight(36)
-                details_button.setMinimumWidth(100)  # Ensure minimum width for text
-                details_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #022d4a;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #033860;
-                    }
-                    QPushButton:pressed {
-                        background-color: #022d4a;
-                    }
-                """)
-                details_button.clicked.connect(lambda: self.show_game_details(game))
-                top_row.addWidget(details_button)
-                
-                # Bottom row layout (Edit and Remove)
-                bottom_row = QHBoxLayout()
-                bottom_row.setSpacing(8)
-                
-                edit_button = QPushButton("EDIT")
-                edit_button.setFixedHeight(36)
-                edit_button.setMinimumWidth(100)  # Ensure minimum width for text
-                edit_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #3182ce;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #4299e1;
-                    }
-                    QPushButton:pressed {
-                        background-color: #2b6cb0;
-                    }
-                """)
-                edit_button.clicked.connect(lambda: self.edit_game(game))
-                bottom_row.addWidget(edit_button)
-                
-                remove_button = QPushButton("REMOVE")
-                remove_button.setFixedHeight(36)
-                remove_button.setMinimumWidth(100)  # Ensure minimum width for text
-                remove_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #dc2626;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #ef4444;
-                    }
-                    QPushButton:pressed {
-                        background-color: #b91c1c;
-                    }
-                """)
-                remove_button.clicked.connect(lambda: self.remove_game(game))
-                bottom_row.addWidget(remove_button)
-                
-                # Add rows to the button container
-                button_container.addLayout(top_row)
-                button_container.addLayout(bottom_row)
-                
-                # Add the button container to the main layout
-                layout.addLayout(button_container)
-            else:
-                # Regular two-button layout for non-manual games
-                launch_button = QPushButton("PLAY")
-                launch_button.setFixedHeight(36)
-                launch_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #723D46;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #8B4B55;
-                    }
-                    QPushButton:pressed {
-                        background-color: #5E323A;
-                    }
-                """)
-                launch_button.clicked.connect(lambda: self.launch_game(game))
-                button_layout.addWidget(launch_button)
-                
-                details_button = QPushButton("DETAILS")
-                details_button.setFixedHeight(36)
-                details_button.setStyleSheet("""
-                    QPushButton {
-                        background-color: #022d4a;
-                        color: white;
-                        border: none;
-                        padding: 8px 15px;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        font-size: 13px;
-                    }
-                    QPushButton:hover {
-                        background-color: #033860;
-                    }
-                    QPushButton:pressed {
-                        background-color: #022d4a;
-                    }
-                """)
-                details_button.clicked.connect(lambda: self.show_game_details(game))
-                button_layout.addWidget(details_button)
-                
-                layout.addLayout(button_layout)
-            
-            card.setLayout(layout)
-            
-            # Set up hover effects with graphical effects
-            shadow = QGraphicsDropShadowEffect()
-            shadow.setColor(QColor(0, 0, 0, 150))
-            shadow.setBlurRadius(20)
-            shadow.setOffset(0, 5)
-            card.setGraphicsEffect(shadow)
-            
-            # Store shadow as an attribute of the card for reference in event handlers
-            card.shadow = shadow
-            
-            # Connect mouse events to change shadow on hover
-            def enter_event(e):
-                card.shadow.setColor(QColor(0, 0, 0, 200))
-                card.shadow.setBlurRadius(25)
-                card.shadow.setOffset(0, 8)
-                # Move card up slightly on hover for "pop out" effect
-                card.setContentsMargins(0, -5, 0, 5)
-                
-            def leave_event(e):
-                card.shadow.setColor(QColor(0, 0, 0, 150))
-                card.shadow.setBlurRadius(20)
-                card.shadow.setOffset(0, 5)
-                # Reset to normal position
-                card.setContentsMargins(0, 0, 0, 0)
-                
-            card.enterEvent = enter_event
-            card.leaveEvent = leave_event
-            
-            return card
-            
-        except Exception as e:
-            print(f"Error creating game card: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return None
-    
-    def load_image(self, url):
-        """Load an image from a URL or local path, with caching support."""
-        try:
-            print(f"[DEBUG] Attempting to load image from URL: {url}")
-            
-            # Check if image is in memory cache
-            if url in self.image_cache:
-                print(f"[DEBUG] Image loaded from memory cache: {url}")
-                return self.image_cache[url]
-            
-            # Generate a unique filename for the image
-            import hashlib
-            url_hash = hashlib.md5(url.encode()).hexdigest()
-            cache_path = os.path.join(self.image_cache_dir, f"{url_hash}.jpg")
-            
-            # Check if image exists in file cache
-            if os.path.exists(cache_path):
-                print(f"[DEBUG] Loading image from file cache: {cache_path}")
-                img = QImage(cache_path)
-                if not img.isNull():
-                    print("[DEBUG] Successfully loaded image from file cache")
-                    # Add to memory cache
-                    self.image_cache[url] = img
-                    return img
-                else:
-                    print("[DEBUG] Failed to load image from file cache - image is null")
-            
-            # Image not in cache, need to download it
-            if url.startswith(('http://', 'https://')):
-                print(f"[DEBUG] Downloading image from URL: {url}")
-                response = requests.get(url, stream=True, timeout=5)
-                if response.status_code == 200:
-                    print("[DEBUG] Successfully downloaded image")
-                    # Save to file cache
-                    with open(cache_path, 'wb') as f:
-                        f.write(response.content)
-                    
-                    # Load into memory and cache
-                    img = QImage()
-                    success = img.loadFromData(response.content)
-                    if success and not img.isNull():
-                        print("[DEBUG] Successfully loaded downloaded image")
-                        self.image_cache[url] = img
-                        return img
-                    else:
-                        print("[DEBUG] Failed to load downloaded image - image is null")
-                else:
-                    print(f"[DEBUG] Failed to download image - status code: {response.status_code}")
-            else:
-                # Try loading from local file
-                print(f"[DEBUG] Attempting to load from local file: {url}")
-                img = QImage(url)
-                if not img.isNull():
-                    print("[DEBUG] Successfully loaded image from local file")
-                    self.image_cache[url] = img
-                    return img
-                else:
-                    print("[DEBUG] Failed to load from local file - image is null")
-                    
-            print(f"[DEBUG] Failed to load image: {url}")
-            return None
-        except Exception as e:
-            print(f"Error loading image: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return None
-
-    def display_games_in_grid(self):
-        """Display games in a grid layout."""
-        try:
-            print("[DEBUG] Starting display_games_in_grid")
-            
-            # Clear existing widgets from grid
-            while self.grid_layout.count():
-                item = self.grid_layout.takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
-
-            # Calculate number of columns based on window width
-            grid_width = self.scroll_area.viewport().width()
-            card_width = 220  # Card width + spacing
-            columns = max(1, grid_width // card_width)
-            
-            print(f"[DEBUG] Grid width: {grid_width}, Columns: {columns}")
-            
-            # Add games to grid
-            row = 0
-            col = 0
-            for game in self.filtered_games:
-                try:
-                    card = self.create_game_card(game)
-                    if card:
-                        self.grid_layout.addWidget(card, row, col)
-                        col += 1
-                        if col >= columns:
-                            col = 0
-                            row += 1
-                except Exception as e:
-                    print(f"Error creating card for game {game.name}: {e}")
-                    continue
-
-            # Add spacer at the end
-            spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
-            self.grid_layout.addItem(spacer, row + 1, 0, 1, columns)
-            
-            # Force layout update
-            self.grid_widget.updateGeometry()
-            self.grid_layout.update()
-            self.scroll_area.viewport().update()
-            
-            print("[DEBUG] Finished display_games_in_grid")
-            
-        except Exception as e:
-            print(f"Error displaying games in grid: {e}")
-            import traceback
-            traceback.print_exc()
-
-    async def add_game(self, game: Game):
-        """Add a new game to the database or update existing one."""
-        try:
-            # Validate Steam games have app_id
-            if game.type == 'steam' and not game.app_id:
-                return False
-                
-            # Add game to database
-            game_id = self.db_manager.add_game(game)
-            if game_id:
-                # Update display
-                self.show_games(self.db_manager.get_all_games())
-            return True
-            return False
-        except Exception as e:
-            print(f"Error adding game: {e}")
-            return False
-
-    async def load_initial_games(self):
-        """Load games from database ONLY - NEVER fetch metadata on normal startup."""
-        try:
-            print("[DEBUG] Starting load_initial_games")
-            # Get all games from database
-            self.games = self.db_manager.get_all_games()
-            self.filtered_games = self.games.copy()
-            print(f"[DEBUG] load_initial_games: Retrieved {len(self.games)} games from database")
-            
-            # Update display with games from database - NO API calls
-            self.force_ui_refresh()
-            print("[DEBUG] load_initial_games complete")
-            
-        except Exception as e:
-            print(f"Error loading initial games: {e}")
-            import traceback
-            traceback.print_exc()
-            QMessageBox.critical(self, "Error", f"Failed to load games: {str(e)}")
-
-    def update_game_statuses(self):
-        """Update the status of running games and installation status"""
-        try:
-            # Update running games
-            for game in self.session_games[:]:  # Create a copy of the list to modify it
-                if hasattr(game, 'process') and game.process:
-                    # Check if the game process is still running
-                    if not game.process.is_running():
-                        # Game has closed
-                        self.session_games.remove(game)
-                        # Stop FPS monitoring if no games are running
-                        if not self.session_games:
-                            self.timer_manager.stop_fps_timer()
-                            self.overlay_window.hide_overlay()
-            
-            # Update installation status for all games
-            for game in self.games:
-                game.check_installation_status()
-            
-            # Update the display to reflect any changes
-            self.display_games_in_grid()
-        except Exception as e:
-            print(f"Error updating game statuses: {e}")
-            self.timer_manager.stop_system_timer()
-
-    def show_games(self, games):
-        """Display games in a grid layout with metadata."""
-        try:
-            # Update the games list
-            self.games = self.db_manager.get_all_games()
-            self.filtered_games = self.games.copy()
-            
-            # Display games
-            self.display_games_in_grid()
-            
-            # Update game count
-            self.ui.gameCountLabel.setText(f"{len(self.games)} Games")
-            
-            # Populate filter dropdowns
-            self.populate_filter_dropdowns()
-            
-        except Exception as e:
-            print(f"Error showing games: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to display games: {str(e)}")
-
-    def show_game_details(self, game):
-        """Show detailed game information in a dialog."""
-        try:
-            print(f"[DEBUG] Showing details for game: {game.name}")
-            print(f"[DEBUG] Game object: {game}")
-            print(f"[DEBUG] Game attributes: type={game.type}, app_id={game.app_id}, genre={game.genre}")
-            
-            # Verify GameDetailsDialog is imported
-            print("[DEBUG] Creating GameDetailsDialog instance")
-            try:
-                dialog = GameDetailsDialog(game, self)
-                print("[DEBUG] GameDetailsDialog instance created successfully")
-            except Exception as dialog_error:
-                print(f"[DEBUG] Error creating dialog: {str(dialog_error)}")
-                import traceback
-                traceback.print_exc()
-                raise
-            
-            # Show the dialog
-            print("[DEBUG] Executing dialog")
-            dialog.exec_()
-            print("[DEBUG] Dialog closed")
-            
-        except Exception as e:
-            print(f"Error showing game details: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            QMessageBox.critical(self, "Error", f"Failed to show game details: {str(e)}")
-
-    def launch_game(self, game):
-        """Launch a game based on its type."""
-        try:
-            if game.type == "steam":
-                # Launch Steam game using steam:// protocol
-                url = f"steam://rungameid/{game.app_id}"
-                QDesktopServices.openUrl(QUrl(url))
-            elif game.type == "epic":
-                # Launch Epic game using os.startfile
-                if game.launch_command:
-                    os.startfile(game.launch_command)
-            else:
-                # Launch regular executable
-                if game.launch_command:
-                    subprocess.Popen(game.launch_command)
-                    
-            # Update playtime tracking
-            game.last_launched = datetime.now()
-            self.db_manager.update_game(game.id, {'last_launched': game.last_launched})
-            
-            # Start monitoring the game process
-            if hasattr(self, 'overlay_window'):
-                # Get the process name from the launch command
-                process_name = os.path.basename(game.launch_command)
-                self.overlay_window.backend.start_monitoring(process_name)
-                self.overlay_window.show_overlay()
-            
-        except Exception as e:
-            print(f"Error launching game: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to launch game: {str(e)}")
-
-    def populate_filter_dropdowns(self):
-        """Get available filter options for the filter dialog"""
-        try:
-            # Get unique values
-            genres = set()
-            platforms = set()
-            
-            for game in self.games:
-                # Add genre
-                if game.genre:
-                    genres.add(game.genre)
-                    
-                # Add platform
-                if game.type:
-                    platforms.add(game.type)
-                    
-            # Sort values
-            self.available_genres = sorted(list(genres))
-            self.available_platforms = sorted(list(platforms))
-            
-        except Exception as e:
-            print(f"Error collecting filter options: {e}")
-
-    def filter_games(self):
-        """Filter games based on current filter settings"""
-        try:
-            self.filtered_games = self.games.copy()
-            
-            # Apply genre filter
-            if self.current_filters['genre'] != 'All Genres':
-                self.filtered_games = [game for game in self.filtered_games 
-                                    if game.genre and self.current_filters['genre'].lower() in game.genre.lower()]
-            
-            # Apply platform filter
-            if self.current_filters['platform'] != 'All Platforms':
-                platform = self.current_filters['platform'].lower()
-                self.filtered_games = [game for game in self.filtered_games 
-                                    if game.type and game.type.lower() == platform]
-            
-            # Apply install status filter
-            if self.current_filters['install_status'] != 'All Games':
-                is_installed = self.current_filters['install_status'] == 'Installed'
-                # Update installation status before filtering
-                for game in self.filtered_games:
-                    game.check_installation_status()
-                self.filtered_games = [game for game in self.filtered_games 
-                                    if game.is_installed == is_installed]
-            
-            # Update game count label
-            self.ui.gameCountLabel.setText(f"{len(self.filtered_games)} Games")
-            
-            # Display the filtered games
-            self.display_games_in_grid()
-            
-        except Exception as e:
-            print(f"Error applying filters: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to apply filters: {str(e)}")
-
-    def show_filter_dialog(self):
-        """Show the filter dialog with current filters and available options."""
-        try:
-            # Update available filter options
-            self.populate_filter_dropdowns()
-            
-            # Create and show dialog with current filters and available options
-            dialog = FilterDialog(
-                parent=self,
-                current_filters=self.current_filters,
-                available_genres=self.available_genres,
-                available_platforms=self.available_platforms
-            )
-            
-            # Connect the dialog's signal
-            dialog.filtersApplied.connect(self.apply_filter_dialog_results)
-            
-            # Show dialog as modal
-            dialog.exec_()
-            
-        except Exception as e:
-            print(f"Error showing filter dialog: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to show filter dialog: {str(e)}")
-
-    def apply_filter_dialog_results(self, filters):
-        """Apply filters from the filter dialog."""
-        try:
-            # Update current filters
-            self.current_filters = filters
-            
-            # Apply filters to games
-            self.filter_games()
-            
-            # Update status message
-            active_filters = []
-            if filters['genre'] != 'All Genres':
-                active_filters.append(f"Genre: {filters['genre']}")
-            if filters['platform'] != 'All Platforms':
-                active_filters.append(f"Platform: {filters['platform']}")
-            if filters['install_status'] != 'All Games':
-                active_filters.append(f"Status: {filters['install_status']}")
-                
-            if active_filters:
-                self.status_bar.showMessage(f"Filters applied: {', '.join(active_filters)}", 5000)
-            else:
-                self.status_bar.showMessage("All filters cleared", 3000)
-                
-        except Exception as e:
-            print(f"Error applying filter dialog results: {e}")
-            QMessageBox.critical(self, "Error", f"Failed to apply filters: {str(e)}")
+        # Reuse card if it exists
+        if hasattr(self, 'card_widgets') and game.id in self.card_widgets:
+            return self.card_widgets[game.id]
+        card = GameCard(game, parent=self)
+        card.clicked.connect(self.show_game_details)
+        if hasattr(self, 'card_widgets'):
+            self.card_widgets[game.id] = card
+        return card
 
     def setup_connections(self):
         """Set up signal connections"""
@@ -1316,10 +526,11 @@ class MainWindow(QMainWindow):
             self.ui.clearSearchBtn.clicked.connect(self.clear_search)
             
             # Connect optimization buttons
-            self.ui.optimizeNowBtn.clicked.connect(self.optimize_pc)
+            self.ui.cleanTempBtn.clicked.connect(self.clean_temp_files)
+            self.ui.manageProcessesBtn.clicked.connect(self.manage_processes)
             
             # Connect overlay buttons
-            self.ui.toggleOverlay.clicked.connect(self.toggle_overlay)
+            self.ui.toggleOverlayBtn.clicked.connect(self.toggle_overlay)
             
             # Connect store buttons - check if they exist first
             if hasattr(self.ui, 'steamStoreBtn'):
@@ -1338,64 +549,102 @@ class MainWindow(QMainWindow):
             self.available_genres = []
             self.available_platforms = []
             
+            # Connect signals for overlay tab
+            self.ui.topLeftBtn.clicked.connect(lambda: self.handle_position_click("top_left"))
+            self.ui.topRightBtn.clicked.connect(lambda: self.handle_position_click("top_right"))
+            self.ui.bottomLeftBtn.clicked.connect(lambda: self.handle_position_click("bottom_left"))
+            self.ui.bottomRightBtn.clicked.connect(lambda: self.handle_position_click("bottom_right"))
+            self.ui.colorPicker.clicked.connect(self.handle_color_click)
+            self.ui.sizeSlider.valueChanged.connect(self.handle_size_change)
+            
+            # Set initial position
+            self.handle_position_click("top_right")
+            
         except Exception as e:
             print(f"Error setting up connections: {e}")
+
+    def handle_color_click(self):
+        """Handle color picker button click"""
+        try:
+            # Get current color from overlay
+            current_color = QColor(self.overlay_window.text_color)
+            
+            # Open color dialog with current color
+            color = QColorDialog.getColor(current_color, self, "Choose Text Color")
+            
+            if color.isValid():
+                # Convert to hex
+                hex_color = color.name()
+                
+                # Update overlay text color
+                self.overlay_window.set_text_color(hex_color)
+                
+                # Update color picker button color
+                self.ui.colorPicker.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: {hex_color};
+                        border: 2px solid #2C5A68;
+                        border-radius: 8px;
+                    }}
+                    QPushButton:hover {{
+                        border: 2px solid #3B82F6;
+                    }}
+                """)
+        except Exception as e:
+            print(f"Error in handle_color_click: {e}")
+
+    def handle_size_change(self, value):
+        """Handle size slider value change"""
+        try:
+            # Update overlay text size
+            self.overlay_window.set_text_size(value)
+        except Exception as e:
+            print(f"Error handling size change: {e}")
 
     def resizeEvent(self, event):
         """Handle window resize events."""
         super().resizeEvent(event)
-        # Only recalculate layout if we have existing games
-        if hasattr(self, 'filtered_games') and self.filtered_games:
+        # Only recalculate layout if we have existing games and cards
+        if hasattr(self, 'filtered_games') and self.filtered_games and hasattr(self, 'game_cards'):
             try:
-                print("[DEBUG] Resize event triggered, rebuilding game grid")
                 # Calculate the number of columns based on window width
-                available_width = self.width()
-                card_width = 340  # Card width + margins + spacing
-                max_cols = max(1, int((available_width - 60) / card_width))
-                print(f"[DEBUG] Resize: calculated {max_cols} columns based on width {available_width}px")
+                available_width = self.scroll_area.viewport().width() - 60  # Subtract margins
+                card_width = 220  # Fixed card width
+                spacing = 20  # Spacing between cards
                 
-                # Create new layout
-                new_layout = QGridLayout()
-                new_layout.setSpacing(20)
-                new_layout.setContentsMargins(30, 30, 30, 30)
-                new_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+                # Calculate new number of columns
+                new_max_cols = max(1, (available_width + spacing) // (card_width + spacing))
                 
-                # Add game cards to new layout
-                row = 0
-                col = 0
-                cards_added = 0
-                print(f"[DEBUG] Resize: Adding {len(self.filtered_games)} game cards to new layout")
-                
-                for game in self.filtered_games:
-                    card = self.create_game_card(game)
-                    if card:
-                        new_layout.addWidget(card, row, col)
-                        cards_added += 1
+                # Only update if the number of columns has changed significantly
+                if abs(new_max_cols - self.max_cols) > 0:
+                    print(f"[DEBUG] Resize: updating from {self.max_cols} to {new_max_cols} columns")
+                    self.max_cols = new_max_cols
+                    
+                    # Remove all widgets from the layout
+                    while self.grid_layout.count():
+                        item = self.grid_layout.takeAt(0)
+                        if item.widget():
+                            self.grid_layout.removeWidget(item.widget())
+                    
+                    # Re-add all cards in the new layout
+                    row = 0
+                    col = 0
+                    for card in self.game_cards:
+                        # Let the card expand, do not set fixed width
+                        self.grid_layout.addWidget(card, row, col)
                         col += 1
-                        if col >= max_cols:
+                        if col >= self.max_cols:
                             col = 0
                             row += 1
-                
-                print(f"[DEBUG] Resize: Added {cards_added} game cards to new layout")
-                
-                # Create new widget for the layout
-                new_widget = QWidget()
-                new_widget.setLayout(new_layout)
-                new_widget.setStyleSheet("background-color: #1e1e1e;")
-                
-                # Replace old layout with new one
-                print("[DEBUG] Resize: Replacing old layout with new layout")
-                if self.grid_widget:
-                    self.grid_widget.deleteLater()
-                self.grid_widget = new_widget
-                self.grid_layout = new_layout
-                self.scroll_area.setWidget(self.grid_widget)
-                print("[DEBUG] Resize: Layout replacement complete")
-                
-                # Force layout update
-                self.grid_widget.updateGeometry()
-                self.grid_layout.update()
-                QApplication.processEvents()
+                    
+                    # Add spacer at the end
+                    spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+                    self.grid_layout.addItem(spacer, row + 1, 0, 1, self.max_cols)
+                    
+                    # Force layout update
+                    self.grid_widget.updateGeometry()
+                    self.grid_layout.update()
+                    self.scroll_area.viewport().update()
                 
             except Exception as e:
                 print(f"Error in resize event: {str(e)}")
@@ -1731,22 +980,128 @@ class MainWindow(QMainWindow):
             print(f"Error updating system usage: {e}")
             self.timer_manager.stop_system_timer()
 
-    def optimize_pc(self):
-        """Run the PC optimization process."""
+    def clean_temp_files(self):
+        """Clean temporary files from the system."""
         try:
             # Delete temporary files
             deleted_files = SystemOptimizer.optimize_pc()
             
-            # Close unnecessary processes
-            SystemOptimizer.close_unnecessary_processes()
+            # Show success message
+            QMessageBox.information(
+                self, 
+                'Cleanup Complete', 
+                f"Successfully deleted {deleted_files} temporary files."
+            )
             
-            QMessageBox.information(self, 'Optimization Complete', 
-                                  f"Successfully deleted {deleted_files} temporary files.")
-            # Update the system usage after optimization
+            # Update the system usage display
             self.update_system_usage()
+            
         except Exception as e:
-            QMessageBox.warning(self, 'Optimization Error',
-                              f"An error occurred during optimization: {str(e)}")
+            QMessageBox.warning(
+                self, 
+                'Cleanup Error',
+                f"An error occurred while cleaning temporary files: {str(e)}"
+            )
+
+    def manage_processes(self):
+        """Show dialog to manage high-demand processes."""
+        try:
+            # Get list of high-demand processes
+            processes = SystemOptimizer.get_unnecessary_processes()
+            
+            if not processes:
+                QMessageBox.information(
+                    self, 
+                    "System Processes", 
+                    "No high-demand processes found.\nAll system processes are running normally."
+                )
+                return
+            
+            # Create process list text with better formatting
+            process_list = "\n".join([
+                f"{idx}. {name} (PID: {pid})\n   • CPU Usage: {cpu:.1f}%\n   • Memory Usage: {mem:.1f}%" 
+                for idx, (pid, name, cpu, mem) in enumerate(processes, start=1)
+            ])
+            
+            # Show dialog with process list and options
+            input_dialog = QInputDialog(self)
+            input_dialog.setWindowTitle("High-Demand Processes Found")
+            input_dialog.setLabelText(
+                "The following processes are using high system resources:\n\n"
+                f"{process_list}\n\n"
+                "To end processes, enter their numbers (comma-separated)\n"
+                "Example: 1,3 (to end processes 1 and 3)\n"
+                "Or type 'all' to end all listed processes:"
+            )
+            input_dialog.setTextValue("")
+            
+            ok = input_dialog.exec_()
+            if ok:
+                input_text = input_dialog.textValue().strip()
+                
+                if not input_text:
+                    return
+                
+                if input_text.lower() == 'all':
+                    to_kill_indices = range(1, len(processes) + 1)
+                else:
+                    try:
+                        to_kill_indices = [
+                            int(i.strip()) for i in input_text.split(',') 
+                            if i.strip().isdigit()
+                        ]
+                    except ValueError:
+                        QMessageBox.warning(
+                            self, 
+                            "Invalid Input", 
+                            "Invalid input format. Please enter numbers separated by commas."
+                        )
+                        return
+                
+                if not to_kill_indices:
+                    QMessageBox.warning(
+                        self,
+                        "Invalid Input",
+                        "No valid process numbers entered."
+                    )
+                    return
+                
+                # End selected processes
+                terminated_count = 0
+                failed_count = 0
+                for idx in to_kill_indices:
+                    if 1 <= idx <= len(processes):
+                        pid = processes[idx - 1][0]
+                        name = processes[idx - 1][1]
+                        try:
+                            psutil.Process(pid).terminate()
+                            terminated_count += 1
+                        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                            failed_count += 1
+                
+                # Show summary message
+                summary = []
+                if terminated_count > 0:
+                    summary.append(f"Successfully terminated {terminated_count} process(es)")
+                if failed_count > 0:
+                    summary.append(f"Failed to terminate {failed_count} process(es)")
+                
+                if summary:
+                    QMessageBox.information(
+                        self,
+                        "Process Management Complete",
+                        "\n".join(summary)
+                    )
+                
+                # Update system usage display after terminating processes
+                self.update_system_usage()
+            
+        except Exception as e:
+            QMessageBox.warning(
+                self, 
+                'Process Management Error',
+                f"An error occurred while managing processes: {str(e)}"
+            )
 
     def handle_sidebar_button(self):
         """Handle sidebar button clicks and their states."""
@@ -1838,13 +1193,18 @@ class MainWindow(QMainWindow):
 
     def toggle_overlay(self):
         """Toggle the overlay window visibility"""
-        if not hasattr(self, 'overlay_window'):
-            self.overlay_window = OverlayWindow(self)
-            
-        if self.overlay_window.isVisible():
-            self.overlay_window.hide_overlay()
-        else:
-            self.overlay_window.show_overlay()
+        try:
+            print("[DEBUG] Toggle overlay called")
+            if self.overlay_window.isVisible():
+                print("[DEBUG] Overlay is visible, hiding it")
+                self.overlay_window.hide_overlay()
+            else:
+                print("[DEBUG] Overlay is hidden, showing it")
+                self.overlay_window.show_overlay()
+        except Exception as e:
+            print(f"[ERROR] Error in toggle_overlay: {e}")
+            import traceback
+            traceback.print_exc()
 
     def ask_for_game_search(self):
         """Ask user if they want to search for games and handle the search process."""
@@ -1874,9 +1234,14 @@ class MainWindow(QMainWindow):
     def browse_and_launch_game(self, game=None):
         """Open dialog to browse for game executable and add/edit game."""
         try:
+            print(f"[DEBUG] browse_and_launch_game called with game: {game.name if game else 'None'}")
+            if game:
+                print(f"[DEBUG] Editing game with type: {game.type}")
+                
             dialog = ManualAddGameDialog(self, game)
             if dialog.exec_() == QDialog.Accepted:
                 game_data = dialog.get_game_data()
+                print(f"[DEBUG] Game data type after dialog: {game_data.type}")
                 
                 if not game_data.name or not game_data.install_path:
                     QMessageBox.warning(self, "Error", "Game name and executable path are required.")
@@ -1886,6 +1251,7 @@ class MainWindow(QMainWindow):
                     # Convert game object to dictionary for update
                     update_data = {
                         'name': game_data.name,
+                        'type': game.type,  # Preserve the game type
                         'install_path': game_data.install_path,
                         'launch_command': game_data.launch_command,
                         'genre': game_data.genre,
@@ -1893,16 +1259,14 @@ class MainWindow(QMainWindow):
                         'description': game_data.description,
                         'developers': game_data.developers,
                         'publishers': game_data.publishers,
-                        'poster_url': game_data.poster_url,  # Add poster URL to update data
-                        'background_url': game_data.background_url,  # Add background URL to update data
-                        'metadata_fetched': True  # Mark as metadata fetched if we have poster/metadata
+                        'poster_url': game_data.poster_url,
+                        'background_url': game_data.background_url,
+                        'metadata_fetched': True
                     }
                     
-                    print(f"[DEBUG] Updating game with data: {update_data}")
-                    
-                    # Update game in database
+                    # Update the game in the database
                     if self.db_manager.update_game(game.id, update_data):
-                        print(f"[DEBUG] Successfully updated game in database")
+                        print(f"[DEBUG] Successfully updated game in database with ID: {game.id}")
                         # Refresh the games list
                         self.games = self.db_manager.get_all_games()
                         self.filtered_games = self.games.copy()
@@ -2059,6 +1423,264 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'overlay_window'):
             self.overlay_window.close()
         event.accept()
+
+    def handle_position_click(self, position):
+        """Handle position button clicks"""
+        # Uncheck all position buttons
+        self.ui.topLeftBtn.setChecked(False)
+        self.ui.topRightBtn.setChecked(False)
+        self.ui.bottomLeftBtn.setChecked(False)
+        self.ui.bottomRightBtn.setChecked(False)
+        
+        # Check the clicked button
+        if position == "top_left":
+            self.ui.topLeftBtn.setChecked(True)
+        elif position == "top_right":
+            self.ui.topRightBtn.setChecked(True)
+        elif position == "bottom_left":
+            self.ui.bottomLeftBtn.setChecked(True)
+        elif position == "bottom_right":
+            self.ui.bottomRightBtn.setChecked(True)
+        
+        # Update overlay position
+        self.overlay_window.set_position(position)
+
+    def update_game_statuses(self):
+        """Update the status of running games and installation status"""
+        try:
+            # Update running games
+            for game in self.session_games[:]:  # Create a copy of the list to modify it
+                if hasattr(game, 'process') and game.process:
+                    # Check if the game process is still running
+                    if not game.process.is_running():
+                        # Game has closed
+                        self.session_games.remove(game)
+                        # Stop FPS monitoring if no games are running
+                        if not self.session_games:
+                            self.timer_manager.stop_fps_timer()
+                            self.overlay_window.hide_overlay()
+            
+            # Update installation status for all games
+            for game in self.games:
+                game.check_installation_status()
+            
+            # Update the display to reflect any changes
+            self.display_games_in_grid()
+        except Exception as e:
+            print(f"Error updating game statuses: {e}")
+            self.timer_manager.stop_system_timer()
+
+    def display_games_in_grid(self):
+        """Display games in a grid layout, reusing GameCard widgets."""
+        try:
+            print("[DEBUG] Starting display_games_in_grid (optimized)")
+            self.grid_widget.setUpdatesEnabled(False)
+            # Clear existing widgets from grid
+            while self.grid_layout.count():
+                item = self.grid_layout.takeAt(0)
+                if item.widget():
+                    item.widget().setParent(None)
+            # Calculate number of columns based on window width
+            available_width = self.scroll_area.viewport().width() - 60  # Subtract margins
+            card_min_width = 200  # Minimum card width
+            spacing = 20  # Spacing between cards
+            self.max_cols = max(1, (available_width + spacing) // (card_min_width + spacing))
+            print(f"[DEBUG] Grid width: {available_width}, Columns: {self.max_cols}")
+            # Add only filtered games to grid, but reuse cards
+            row = 0
+            col = 0
+            for game in self.filtered_games:
+                card = self.create_game_card(game)
+                card.setVisible(True)
+                self.grid_layout.addWidget(card, row, col, 1, 1, Qt.AlignCenter)
+                col += 1
+                if col >= self.max_cols:
+                    col = 0
+                    row += 1
+            # Hide cards not in filtered_games
+            filtered_ids = set(g.id for g in self.filtered_games)
+            for gid, card in self.card_widgets.items():
+                if gid not in filtered_ids:
+                    card.setVisible(False)
+            # Set stretch factors for all columns
+            for i in range(self.max_cols):
+                self.grid_layout.setColumnStretch(i, 1)
+            for i in range(row + 1):
+                self.grid_layout.setRowStretch(i, 0)
+            self.grid_layout.setRowStretch(row + 1, 1)
+            self.grid_widget.setUpdatesEnabled(True)
+            self.grid_widget.updateGeometry()
+            self.grid_layout.update()
+            self.scroll_area.viewport().update()
+            print("[DEBUG] Finished display_games_in_grid (optimized)")
+        except Exception as e:
+            print(f"Error displaying games in grid: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def load_image(self, url):
+        """Load an image from a URL or local path, with caching support."""
+        try:
+            print(f"[DEBUG] Attempting to load image from URL: {url}")
+            
+            # Check if image is in memory cache
+            if url in self.image_cache:
+                print(f"[DEBUG] Image loaded from memory cache: {url}")
+                return self.image_cache[url]
+            
+            # Generate a unique filename for the image
+            import hashlib
+            url_hash = hashlib.md5(url.encode()).hexdigest()
+            cache_path = os.path.join(self.image_cache_dir, f"{url_hash}.jpg")
+            
+            # Check if image exists in file cache
+            if os.path.exists(cache_path):
+                print(f"[DEBUG] Loading image from file cache: {cache_path}")
+                img = QImage(cache_path)
+                if not img.isNull():
+                    print("[DEBUG] Successfully loaded image from file cache")
+                    # Add to memory cache
+                    self.image_cache[url] = img
+                    return img
+                else:
+                    print("[DEBUG] Failed to load image from file cache - image is null")
+            
+            # Image not in cache, need to download it
+            if url.startswith(('http://', 'https://')):
+                print(f"[DEBUG] Downloading image from URL: {url}")
+                response = requests.get(url, stream=True, timeout=5)
+                if response.status_code == 200:
+                    print("[DEBUG] Successfully downloaded image")
+                    # Save to file cache
+                    with open(cache_path, 'wb') as f:
+                        f.write(response.content)
+                    
+                    # Load into memory and cache
+                    img = QImage()
+                    success = img.loadFromData(response.content)
+                    if success and not img.isNull():
+                        print("[DEBUG] Successfully loaded downloaded image")
+                        self.image_cache[url] = img
+                        return img
+                    else:
+                        print("[DEBUG] Failed to load downloaded image - image is null")
+                else:
+                    print(f"[DEBUG] Failed to download image - status code: {response.status_code}")
+            else:
+                # Try loading from local file
+                print(f"[DEBUG] Attempting to load from local file: {url}")
+                img = QImage(url)
+                if not img.isNull():
+                    print("[DEBUG] Successfully loaded image from local file")
+                    self.image_cache[url] = img
+                    return img
+                else:
+                    print("[DEBUG] Failed to load from local file - image is null")
+                    
+            print(f"[DEBUG] Failed to load image: {url}")
+            return None
+        except Exception as e:
+            print(f"Error loading image: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def show_filter_dialog(self):
+        """Show the filter dialog with current filters and available options."""
+        try:
+            # Update available filter options
+            self.populate_filter_dropdowns()
+            
+            # Create and show dialog with current filters and available options
+            dialog = FilterDialog(
+                parent=self,
+                current_filters=self.current_filters,
+                available_genres=self.available_genres,
+                available_platforms=self.available_platforms
+            )
+            
+            # Connect the dialog's signal
+            dialog.filtersApplied.connect(self.apply_filter_dialog_results)
+            
+            # Show dialog as modal
+            dialog.exec_()
+            
+        except Exception as e:
+            print(f"Error showing filter dialog: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to show filter dialog: {str(e)}")
+
+    async def load_initial_games(self):
+        """Load games from database ONLY - NEVER fetch metadata on normal startup."""
+        try:
+            print("[DEBUG] Starting load_initial_games")
+            self.games = self.db_manager.get_all_games()
+            self.filtered_games = self.games.copy()
+            print(f"[DEBUG] load_initial_games: Retrieved {len(self.games)} games from database")
+            self.force_ui_refresh()
+            print("[DEBUG] load_initial_games complete")
+        except Exception as e:
+            print(f"Error loading initial games: {e}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Error", f"Failed to load games: {str(e)}")
+        finally:
+            if hasattr(self, 'spinner_dialog'):
+                self.spinner_dialog.stop()
+
+    def show_game_details(self, game):
+        dialog = GameDetailsDialog(game, self)
+        dialog.exec_()
+
+    def populate_filter_dropdowns(self):
+        """Populate available_genres and available_platforms for the filter dialog based on current games."""
+        genres = set()
+        platforms = set()
+        for game in self.games:
+            if game.genre:
+                for genre in str(game.genre).split(','):
+                    genres.add(genre.strip())
+            if game.type:
+                platforms.add(game.type.strip().capitalize())
+        self.available_genres = sorted(g for g in genres if g)
+        self.available_platforms = sorted(p for p in platforms if p)
+
+    def apply_filter_dialog_results(self, filters):
+        """Apply the selected filters to the game list."""
+        self.current_filters = filters
+        filtered = self.games
+
+        # Filter by genre
+        if filters.get('genre') and filters['genre'] != 'All Genres':
+            filtered = [g for g in filtered if g.genre and filters['genre'].lower() in g.genre.lower()]
+
+        # Filter by platform
+        if filters.get('platform') and filters['platform'] != 'All Platforms':
+            filtered = [g for g in filtered if g.type and filters['platform'].lower() == g.type.lower()]
+
+        # Filter by install status
+        if filters.get('install_status') == 'Installed':
+            filtered = [g for g in filtered if getattr(g, 'is_installed', False)]
+        elif filters.get('install_status') == 'Not Installed':
+            filtered = [g for g in filtered if not getattr(g, 'is_installed', False)]
+
+        self.filtered_games = filtered
+        self.display_games_in_grid()
+        self.ui.gameCountLabel.setText(f"{len(self.filtered_games)} Games Found")
+
+    def launch_game(self, game):
+        """Launch the selected game."""
+        try:
+            if hasattr(game, 'type') and game.type == 'manual' and game.install_path:
+                import subprocess
+                subprocess.Popen(game.install_path, shell=True)
+            elif hasattr(game, 'app_id') and game.app_id:
+                from PySide6.QtCore import QUrl
+                from PySide6.QtGui import QDesktopServices
+                QDesktopServices.openUrl(QUrl(f"steam://rungameid/{game.app_id}"))
+            else:
+                QMessageBox.warning(self, "Error", "No launch command available for this game.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to launch game: {str(e)}")
 
 if __name__ == '__main__':
     try:

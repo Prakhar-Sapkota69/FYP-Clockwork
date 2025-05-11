@@ -30,8 +30,6 @@ class Game:
     publishers: List[str] = None
     metacritic: int = 0
     esrb_rating: str = "Not Rated"
-    epic_app_id: Optional[str] = None  # For Epic Games Store
-    epic_launch_command: Optional[str] = None  # For Epic Games Store
     last_launched: Optional[datetime] = None  # For tracking when the game was last launched
 
     def __post_init__(self):
@@ -94,32 +92,6 @@ class Game:
                 
                 self.is_installed = False
                 
-            elif self.type == 'epic':
-                try:
-                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Epic Games\EpicGamesLauncher")
-                    epic_path = winreg.QueryValueEx(key, "AppDataPath")[0]
-                except:
-                    try:
-                        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Epic Games\EpicGamesLauncher")
-                        epic_path = winreg.QueryValueEx(key, "AppDataPath")[0]
-                    except:
-                        self.is_installed = False
-                        return
-                
-                # Check for game manifest
-                manifest_path = os.path.join(epic_path, "Data", "Manifests", f"{self.app_id}.item")
-                if os.path.exists(manifest_path):
-                    with open(manifest_path, 'r', encoding='utf-8') as f:
-                        manifest_data = json.load(f)
-                    
-                    # Check if installation location exists
-                    install_location = manifest_data.get('InstallLocation', '')
-                    if install_location and os.path.exists(install_location):
-                        self.is_installed = True
-                        return
-                
-                self.is_installed = False
-                
         except Exception as e:
             self.is_installed = False
 
@@ -132,11 +104,6 @@ class Game:
                     app_id = ''.join(filter(str.isdigit, app_id))
                     if app_id:
                         self.app_id = app_id
-                        return app_id
-                elif 'epic://launch/' in self.launch_command:
-                    app_id = self.launch_command.split('epic://launch/')[-1].strip()
-                    if app_id:
-                        self.epic_app_id = app_id
                         return app_id
         except Exception as e:
             pass
@@ -218,8 +185,6 @@ class Game:
             publishers=data.get('publishers', []),
             metacritic=data.get('metacritic', 0),
             esrb_rating=data.get('esrb_rating', 'Not Rated'),
-            epic_app_id=data.get('epic_app_id'),
-            epic_launch_command=data.get('epic_launch_command'),
             last_launched=data.get('last_launched')
         )
 

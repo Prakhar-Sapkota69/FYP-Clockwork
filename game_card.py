@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import (
     QFrame, QLabel, QVBoxLayout, QDialog, QMessageBox, 
-    QHBoxLayout, QGraphicsDropShadowEffect, QWidget, QPushButton
+    QHBoxLayout, QGraphicsDropShadowEffect, QWidget, QPushButton, QSizePolicy
 )
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QUrl, Signal
 from PySide6.QtGui import QPixmap, QColor, QDesktopServices, QImage, QIcon
@@ -28,19 +28,20 @@ class GameCard(QFrame):
         self.setFrameStyle(QFrame.Box | QFrame.Raised)
         self.setLineWidth(1)
         self.setMinimumSize(200, 300)
-        self.setMaximumSize(200, 300)
+        self.setMaximumHeight(300)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setStyleSheet("""
             QFrame {
-                background-color: #2b2b2b;
+                background-color: #2A3A6A;
                 border-radius: 10px;
-                border: 1px solid #3d3d3d;
+                border: 2px solid #B4CDED;
             }
             QFrame:hover {
-                border: 1px solid #4d4d4d;
-                background-color: #323232;
+                border: 2px solid #9BB8E0;
+                background-color: #2A3A6A;
             }
             QLabel {
-                color: white;
+                color: #B4CDED;
             }
         """)
         
@@ -51,9 +52,9 @@ class GameCard(QFrame):
         
         # Add poster image
         self.poster_label = QLabel()
-        self.poster_label.setFixedSize(180, 100)
+        self.poster_label.setFixedSize(180, 100)  # Fixed size for poster
         self.poster_label.setAlignment(Qt.AlignCenter)
-        self.poster_label.setStyleSheet("background-color: #1a1a1a; border-radius: 5px;")
+        self.poster_label.setStyleSheet("background-color: #202C59; border-radius: 5px;")
         self.load_poster()
         layout.addWidget(self.poster_label)
         
@@ -61,7 +62,7 @@ class GameCard(QFrame):
         self.title_label = QLabel(self.game.name or 'Unknown Game')
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setWordWrap(True)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px;")
+        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 5px; color: #B4CDED;")
         layout.addWidget(self.title_label)
         
         # Add genre if available
@@ -69,7 +70,7 @@ class GameCard(QFrame):
             self.genre_label = QLabel(self.game.genre)
             self.genre_label.setAlignment(Qt.AlignCenter)
             self.genre_label.setWordWrap(True)
-            self.genre_label.setStyleSheet("font-size: 12px; color: #aaaaaa;")
+            self.genre_label.setStyleSheet("font-size: 12px; color: #9BB8E0;")
             layout.addWidget(self.genre_label)
             
         # Add metadata status
@@ -120,9 +121,9 @@ class GameCard(QFrame):
             self.poster_label.setText("No Image")
             self.poster_label.setStyleSheet("""
                 QLabel {
-                    background-color: #3d3d3d;
+                    background-color: #202C59;
                     border-radius: 5px;
-                    color: #888;
+                    color: #9BB8E0;
                     font-size: 12px;
                 }
             """)
@@ -131,7 +132,7 @@ class GameCard(QFrame):
             self.poster_label.setText("Error")
             self.poster_label.setStyleSheet("""
                 QLabel {
-                    background-color: #3d3d3d;
+                    background-color: #202C59;
                     border-radius: 5px;
                     color: #ff4444;
                     font-size: 12px;
